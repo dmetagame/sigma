@@ -27,7 +27,7 @@ function resolveProvider(): Provider {
 
 const provider = resolveProvider();
 const defaultModel =
-  provider === "google" ? "gemini-2.0-flash" : "claude-sonnet-4-6";
+  provider === "google" ? "gemini-2.5-flash" : "claude-sonnet-4-6";
 
 export const env = {
   RH_TESTNET_RPC:
