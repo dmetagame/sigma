@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { encodeAbiParameters, encodeFunctionData, type Address } from "viem";
+import { encodeAbiParameters, type Address } from "viem";
 import { env } from "./config.js";
 import { makePublicClient, makeWalletClient, pilotAddress } from "./client.js";
 import { strategistAbi, ActionType, type ActionTypeName } from "./abi.js";
@@ -99,29 +99,30 @@ async function submitAction(
     throw new Error("SIGMA_STRATEGIST_ADDR is not set in .env.local");
 
   const account = wc.account!;
-  const calldata = encodeFunctionData({
+
+  // Simulate first via simulateContract — surfaces policy reverts with the
+  // actual error name (e.g. NotAgent, BorrowCapExceeded) rather than a raw
+  // RPC error message.
+  try {
+    await pc.simulateContract({
+      account,
+      address: strategist,
+      abi: strategistAbi,
+      functionName: "executeAction",
+      args: [user, ActionType[action], data, rationale],
+    });
+  } catch (e) {
+    return `SIMULATION REVERTED: ${(e as Error).message.split("\n")[0] ?? String(e)}`;
+  }
+
+  const hash = await wc.writeContract({
+    account,
+    chain: wc.chain!,
+    address: strategist,
     abi: strategistAbi,
     functionName: "executeAction",
     args: [user, ActionType[action], data, rationale],
   });
-
-  // Simulate first to surface any policy revert with a readable error.
-  try {
-    await pc.call({
-      account: account.address,
-      to: strategist,
-      data: calldata,
-    });
-  } catch (e) {
-    return `SIMULATION REVERTED: ${(e as Error).message}`;
-  }
-
-  const hash = await wc.sendTransaction({
-    account,
-    chain: wc.chain!,
-    to: strategist,
-    data: calldata,
-  });
   const receipt = await pc.waitForTransactionReceipt({ hash });
-  return `executed ${action} for ${user} — tx ${hash} status=${receipt.status} gas=${receipt.gasUsed}`;
+  return `executed ${action} ${rationale.slice(0, 60)} — tx ${hash} status=${receipt.status} gas=${receipt.gasUsed}`;
 }

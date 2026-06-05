@@ -48,6 +48,12 @@ export interface TickResult {
   finishReason: string;
   text: string;
   toolCalls: number;
+  // Per-step record so the CLI can show what the agent actually called.
+  // Loose-typed because the precise step type depends on the tool set.
+  steps: ReadonlyArray<{
+    toolCalls?: ReadonlyArray<{ toolName: string; toolCallId: string; input: unknown }>;
+    toolResults?: ReadonlyArray<{ toolCallId: string; output?: unknown }>;
+  }>;
   pilotAddress: Address;
 }
 
@@ -76,6 +82,7 @@ export async function runTick(opts: TickOptions): Promise<TickResult> {
     finishReason: result.finishReason,
     text: result.text,
     toolCalls: result.steps.reduce((acc, s) => acc + s.toolCalls.length, 0),
+    steps: result.steps,
     pilotAddress: pilotAddress(),
   };
 }

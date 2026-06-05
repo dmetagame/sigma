@@ -31,6 +31,18 @@ async function main() {
   if (mode === "tick") {
     const out = await runTick({ user, dryRun });
     console.log("---");
+    for (const step of out.steps) {
+      for (const tc of step.toolCalls ?? []) {
+        const result = step.toolResults?.find((r) => r.toolCallId === tc.toolCallId);
+        const resultStr =
+          result && "output" in result
+            ? String(result.output).split("\n")[0]?.slice(0, 200)
+            : "<no result>";
+        console.log(`▸ ${tc.toolName}(${JSON.stringify(tc.input).slice(0, 200)})`);
+        console.log(`  → ${resultStr}`);
+      }
+    }
+    console.log("---");
     console.log(out.text);
     console.log(`---\nfinish=${out.finishReason} toolCalls=${out.toolCalls}`);
     return;
