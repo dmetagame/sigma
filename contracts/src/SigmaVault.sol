@@ -55,6 +55,9 @@ contract SigmaVault is ReentrancyGuard, Ownable {
     mapping(address => mapping(address => uint256)) public collateral; // user -> stock -> amount
     mapping(address => uint256) public debt; // user -> USDC owed (6-dec)
 
+    /// Optional per-user executor authorized to perform actions on the user's behalf.
+    mapping(address => address) public executor;
+
     // -- Events --------------------------------------------------------------
 
     event Deposited(address indexed user, address indexed stock, uint256 amount);
@@ -71,6 +74,7 @@ contract SigmaVault is ReentrancyGuard, Ownable {
     event SupportedStockAdded(address indexed stock, uint256 volWad);
     event CorrelationSet(address indexed a, address indexed b, int256 rhoWad);
     event RiskParamsUpdated(uint256 zScore, uint256 horizonSqrt, uint256 varSafetyFactor);
+    event ExecutorSet(address indexed user, address indexed executor);
 
     // -- Errors --------------------------------------------------------------
 
@@ -79,6 +83,7 @@ contract SigmaVault is ReentrancyGuard, Ownable {
     error Unhealthy();
     error Healthy();
     error ZeroAmount();
+    error NotExecutor();
 
     // -- Constructor ---------------------------------------------------------
 
@@ -125,6 +130,20 @@ contract SigmaVault is ReentrancyGuard, Ownable {
         oracle = newOracle;
     }
 
+    // -- Executor delegation -------------------------------------------------
+
+    /// @notice Designate `_executor` as authorized to act on msg.sender's position
+    ///         via `*For` variants. Pass `address(0)` to revoke.
+    function setExecutor(address _executor) external {
+        executor[msg.sender] = _executor;
+        emit ExecutorSet(msg.sender, _executor);
+    }
+
+    modifier asUser(address user) {
+        if (msg.sender != user && msg.sender != executor[user]) revert NotExecutor();
+        _;
+    }
+
     // -- User actions --------------------------------------------------------
 
     function deposit(address stock, uint256 amount) external nonReentrant {
@@ -164,6 +183,42 @@ contract SigmaVault is ReentrancyGuard, Ownable {
 
     /// @notice Seize `seizeAmount` of `seizeStock` from `user` in exchange for
     ///         repaying `repayUsdc` of their debt. Only when `user` is unhealthy.
+    // -- Executor-callable variants ------------------------------------------
+
+    /// @notice Borrow on behalf of `user`. USDC is delivered to `user`, not to the executor.
+    function borrowFor(address user, uint256 amount) external asUser(user) nonReentrant {
+        if (amount == 0) revert ZeroAmount();
+        debt[user] += amount;
+        if (!_isHealthy(user)) revert Unhealthy();
+        usdc.safeTransfer(user, amount);
+        emit Borrowed(user, amount);
+    }
+
+    /// @notice Repay on behalf of `user`. USDC is pulled from msg.sender.
+    function repayFor(address user, uint256 amount) external nonReentrant {
+        if (amount == 0) revert ZeroAmount();
+        uint256 owed = debt[user];
+        uint256 pay = amount > owed ? owed : amount;
+        debt[user] = owed - pay;
+        usdc.safeTransferFrom(msg.sender, address(this), pay);
+        emit Repaid(user, pay);
+    }
+
+    /// @notice Withdraw collateral on behalf of `user`. Stock is delivered to `user`.
+    function withdrawFor(address user, address stock, uint256 amount)
+        external
+        asUser(user)
+        nonReentrant
+    {
+        if (!isSupported[stock]) revert NotSupported();
+        if (amount == 0) revert ZeroAmount();
+        if (collateral[user][stock] < amount) revert InsufficientCollateral();
+        collateral[user][stock] -= amount;
+        if (debt[user] > 0 && !_isHealthy(user)) revert Unhealthy();
+        IERC20(stock).safeTransfer(user, amount);
+        emit Withdrawn(user, stock, amount);
+    }
+
     function liquidate(address user, address seizeStock, uint256 seizeAmount, uint256 repayUsdc)
         external
         nonReentrant
