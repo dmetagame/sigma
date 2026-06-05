@@ -13,6 +13,22 @@ function required(name: string): string {
   return v;
 }
 
+type Provider = "google" | "anthropic";
+
+function resolveProvider(): Provider {
+  const explicit = (process.env.PILOT_PROVIDER ?? "").toLowerCase();
+  if (explicit === "google" || explicit === "anthropic") return explicit;
+  if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) return "google";
+  if (process.env.ANTHROPIC_API_KEY) return "anthropic";
+  throw new Error(
+    "No LLM key found. Set GOOGLE_GENERATIVE_AI_API_KEY (free, recommended) or ANTHROPIC_API_KEY.",
+  );
+}
+
+const provider = resolveProvider();
+const defaultModel =
+  provider === "google" ? "gemini-2.0-flash" : "claude-sonnet-4-6";
+
 export const env = {
   RH_TESTNET_RPC:
     process.env.RH_TESTNET_RPC ?? "https://rpc.testnet.chain.robinhood.com",
@@ -20,7 +36,10 @@ export const env = {
   RH_TESTNET_EXPLORER:
     process.env.RH_TESTNET_EXPLORER ??
     "https://explorer.testnet.chain.robinhood.com",
-  ANTHROPIC_API_KEY: required("ANTHROPIC_API_KEY"),
+  PILOT_PROVIDER: provider,
+  // Either Anthropic or Google key — Pilot picks the matching SDK.
+  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY ?? "",
+  GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? "",
   // The Pilot's own EOA — registered as `agent` in each user's Policy.
   PILOT_PRIVATE_KEY: required("PILOT_PRIVATE_KEY"),
   // Deployment addresses — populated after deploy script runs.
@@ -28,6 +47,6 @@ export const env = {
   SIGMA_VAULT_ADDR: process.env.SIGMA_VAULT_ADDR ?? "",
   SIGMA_STRATEGIST_ADDR: process.env.SIGMA_STRATEGIST_ADDR ?? "",
   USDC_ADDR: process.env.USDC_ADDR ?? "",
-  // Model selection — Sonnet by default for agent runtime cost.
-  PILOT_MODEL: process.env.PILOT_MODEL ?? "claude-sonnet-4-6",
+  // Model selection — provider-appropriate default.
+  PILOT_MODEL: process.env.PILOT_MODEL ?? defaultModel,
 } as const;
