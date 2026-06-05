@@ -1,12 +1,17 @@
 [package]
-name = "stylus-probe"
+name = "sigma-core"
 version = "0.1.0"
 edition = "2024"
+description = "On-chain parametric portfolio VaR for Sigma — Stylus WASM, Arbitrum/Robinhood Chain."
+license = "MIT"
 
 [dependencies]
 alloy-primitives = "1.5.7"
 alloy-sol-types = "1.5.7"
 stylus-sdk = "0.10.7"
+
+[dev-dependencies]
+stylus-sdk = { version = "0.10.7", features = ["stylus-test"] }
 
 [lib]
 crate-type = ["lib", "cdylib"]
@@ -23,7 +28,4 @@ codegen-units = 1
 strip = true
 lto = true
 panic = "abort"
-
-# If you need to reduce the binary size, it is advisable to try other
-# optimization levels, such as "s" and "z"
 opt-level = 3
