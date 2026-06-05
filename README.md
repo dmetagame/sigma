@@ -35,10 +35,29 @@ sigma/
 
 ```bash
 pnpm install
-cd core && cargo stylus check --endpoint https://rpc.testnet.chain.robinhood.com
-cd ../contracts && forge build
-cd ../web && pnpm dev
+cd contracts && forge test           # 12 passing
+cd ../core   && cargo test --release # 3 passing
 ```
+
+### Deploy to Robinhood Chain testnet
+
+```bash
+cp .env.example .env.local           # fill DEPLOYER_PRIVATE_KEY, ANTHROPIC_API_KEY, PILOT_PRIVATE_KEY
+./scripts/deploy.sh                  # phase 1 (Stylus) + phase 2 (Solidity)
+```
+
+The deploy script auto-discovers real Robinhood Chain testnet token addresses:
+
+| Asset | Address |
+|---|---|
+| USDC | `0xAc80194dc1aE8eF52df73e7e1864fB3C62290fe0` (6-dec) |
+| TSLA | `0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E` |
+| AMD  | `0x71178BAc73cBeb415514eB542a8995b82669778d` |
+| AMZN | `0x5884aD2f920c162CFBbACc88C9C51AA75eC09E02` |
+| NFLX | `0x3b8262A63d25f0477c4DDE23F83cfe22Cb768C93` |
+| PLTR | `0x1FBE1a0e43594b3455993B5dE5Fd0A7A266298d0` |
+
+Get them from `https://faucet.testnet.chain.robinhood.com` (drips ETH + 5 of each stock per request). USDC isn't dripped — borrow some against the stocks via the **Aave Stock** fork that's already live on RH testnet.
 
 ## Robinhood Chain testnet
 
