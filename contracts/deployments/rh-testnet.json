@@ -1,0 +1,15 @@
+{
+  "chainId": 46630,
+  "sigmaCore": "0x3517b74800E6A731656D8cc809d77f730da4d1dA",
+  "sigmaVault": "0xF0221bDE2cdf11b9855F91B491597076d27804Cf",
+  "sigmaStrategist": "0xB4821E0617b8e3c8Ddd7359A9f338e7176A0633b",
+  "oracleAdapter": "0x0d22DdC5d0Da0E4988b04E0647b4643e7BDfFc79",
+  "usdc": "0xAc80194dc1aE8eF52df73e7e1864fB3C62290fe0",
+  "stocks": [
+    { "symbol": "TSLA", "address": "0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E" },
+    { "symbol": "AMD", "address": "0x71178BAc73cBeb415514eB542a8995b82669778d" },
+    { "symbol": "AMZN", "address": "0x5884aD2f920c162CFBbACc88C9C51AA75eC09E02" },
+    { "symbol": "NFLX", "address": "0x3b8262A63d25f0477c4DDE23F83cfe22Cb768C93" },
+    { "symbol": "PLTR", "address": "0x1FBE1a0e43594b3455993B5dE5Fd0A7A266298d0" }
+  ]
+}

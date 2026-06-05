@@ -32,9 +32,11 @@ if [[ "$phase" == "core" || "$phase" == "all" ]]; then
       --endpoint "$RH_TESTNET_RPC" \
       --private-key "$DEPLOYER_PRIVATE_KEY" \
       --no-verify 2>&1 | tee /tmp/sigma-core-deploy.log)
-  addr=$(echo "$out" | grep -Eo "deployed code at address: 0x[a-fA-F0-9]{40}" | tail -1 | awk '{print $NF}')
+  # Strip ANSI color codes before regex match.
+  clean=$(echo "$out" | sed -r "s/\x1B\[[0-9;]*[mGKHJ]//g")
+  addr=$(echo "$clean" | grep -Eio "deployed code at address: 0x[a-fA-F0-9]{40}" | tail -1 | grep -Eio "0x[a-fA-F0-9]{40}")
   if [[ -z "$addr" ]]; then
-    addr=$(echo "$out" | grep -Eo "contract activated and ready onchain with address: 0x[a-fA-F0-9]{40}" | tail -1 | awk '{print $NF}')
+    addr=$(echo "$clean" | grep -Eio "successfully activated contract 0x[a-fA-F0-9]{40}" | tail -1 | grep -Eio "0x[a-fA-F0-9]{40}")
   fi
   if [[ -z "$addr" ]]; then
     echo "✘ Could not extract deployed address from cargo stylus deploy output." >&2
