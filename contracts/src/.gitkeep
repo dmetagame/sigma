@@ -1,0 +1,6 @@
+Sigma Solidity contracts land here:
+- MockRHStock.sol
+- OracleAdapter.sol
+- SigmaCoreAdapter.sol    (interface to Stylus VaR contract)
+- SigmaVault.sol
+- SigmaStrategist.sol

@@ -1,0 +1,44 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Node
+node_modules/
+.pnpm-store/
+.npm/
+
+# Next.js
+.next/
+out/
+.vercel/
+
+# TypeScript
+*.tsbuildinfo
+dist/
+
+# Rust / Stylus
+target/
+**/*.rs.bk
+Cargo.lock.bak
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/*/dryrun/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
