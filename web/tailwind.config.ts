@@ -8,7 +8,6 @@ const config: Config = {
         display: ["var(--font-display)", "sans-serif"],
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
         mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
-        accent: ["var(--font-accent)", "serif"],
       },
       colors: {
         bg: "var(--bg)",

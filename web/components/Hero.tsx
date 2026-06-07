@@ -15,8 +15,9 @@ export function Hero() {
           </h1>
           <p className="text-muted text-lg max-w-2xl">
             Tokenized stocks cannot become useful DeFi collateral until somebody builds
-            real risk pricing on-chain. Sigma does it in Stylus — gas-cheap enough that
-            every borrow can be sized against a live portfolio VaR.
+            portfolio-aware risk pricing on-chain. Sigma computes VaR in Stylus so every
+            borrow can be checked against the current collateral basket. This testnet demo
+            uses seeded oracle prices and illustrative volatility inputs.
           </p>
         </div>
         <aside className="col-span-12 md:col-span-4">

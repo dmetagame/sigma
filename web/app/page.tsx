@@ -8,10 +8,12 @@ export default function Page() {
   return (
     <>
       <Header />
-      <Hero />
-      <PortfolioPanel />
-      <StylusShowcase />
-      <PilotLog />
+      <main>
+        <Hero />
+        <PortfolioPanel />
+        <StylusShowcase />
+        <PilotLog />
+      </main>
       <footer className="border-t border-border">
         <div className="mx-auto max-w-7xl px-6 py-10 grid grid-cols-12 gap-6">
           <div className="col-span-12 md:col-span-6">

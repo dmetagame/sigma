@@ -2,9 +2,11 @@
 pragma solidity ^0.8.27;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {IOracleAdapter} from "./IOracleAdapter.sol";
 import {ISigmaCore} from "./ISigmaCore.sol";
@@ -21,6 +23,11 @@ import {ISigmaCore} from "./ISigmaCore.sol";
 ///      - VaR returned from Sigma Core in USDC 6-decimal.
 contract SigmaVault is ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
+
+    uint256 public constant WAD = 1e18;
+    uint256 public constant MAX_STOCKS = 16;
+    uint256 public constant LIQUIDATION_BONUS_WAD = 1.05e18;
+    uint256 public constant LIQUIDATION_CLOSE_FACTOR_WAD = 0.5e18;
 
     // -- Immutable wiring ----------------------------------------------------
 
@@ -50,6 +57,9 @@ contract SigmaVault is ReentrancyGuard, Ownable {
     /// max_borrow = portfolio_value − (safety_factor · VaR).
     uint256 public varSafetyFactor = 2_000_000_000_000_000_000; // 2x by default
 
+    /// Hard LTV ceiling that remains effective if VaR is zero or understated.
+    uint256 public maxLtvWad = 0.8e18;
+
     // -- Per-user state ------------------------------------------------------
 
     mapping(address => mapping(address => uint256)) public collateral; // user -> stock -> amount
@@ -74,6 +84,7 @@ contract SigmaVault is ReentrancyGuard, Ownable {
     event SupportedStockAdded(address indexed stock, uint256 volWad);
     event CorrelationSet(address indexed a, address indexed b, int256 rhoWad);
     event RiskParamsUpdated(uint256 zScore, uint256 horizonSqrt, uint256 varSafetyFactor);
+    event MaxLtvUpdated(uint256 maxLtvWad);
     event ExecutorSet(address indexed user, address indexed executor);
 
     // -- Errors --------------------------------------------------------------
@@ -84,12 +95,18 @@ contract SigmaVault is ReentrancyGuard, Ownable {
     error Healthy();
     error ZeroAmount();
     error NotExecutor();
+    error InvalidAddress();
+    error InvalidRiskParameter();
+    error TooManyStocks();
+    error UnsupportedDecimals();
+    error ExcessiveSeizure();
 
     // -- Constructor ---------------------------------------------------------
 
     constructor(IERC20 usdc_, ISigmaCore sigmaCore_, IOracleAdapter oracle_, address initialOwner)
         Ownable(initialOwner)
     {
+        if (address(usdc_) == address(0) || address(sigmaCore_) == address(0) || address(oracle_) == address(0)) revert InvalidAddress();
         usdc = usdc_;
         sigmaCore = sigmaCore_;
         oracle = oracle_;
@@ -98,6 +115,10 @@ contract SigmaVault is ReentrancyGuard, Ownable {
     // -- Admin ---------------------------------------------------------------
 
     function addStock(address stock, uint256 volWad) external onlyOwner {
+        if (stock == address(0) || stock.code.length == 0) revert InvalidAddress();
+        if (stocks.length >= MAX_STOCKS) revert TooManyStocks();
+        if (IERC20Metadata(stock).decimals() != 18) revert UnsupportedDecimals();
+        if (volWad == 0 || volWad > 5e18) revert InvalidRiskParameter();
         require(!isSupported[stock], "exists");
         isSupported[stock] = true;
         indexOf[stock] = stocks.length;
@@ -110,23 +131,40 @@ contract SigmaVault is ReentrancyGuard, Ownable {
 
     function setCorrelation(address a, address b, int256 rhoWad) external onlyOwner {
         require(isSupported[a] && isSupported[b], "unsupported");
+        if (rhoWad < -1e18 || rhoWad > 1e18) revert InvalidRiskParameter();
+        if (a == b && rhoWad != 1e18) revert InvalidRiskParameter();
         corr[a][b] = rhoWad;
         corr[b][a] = rhoWad;
         emit CorrelationSet(a, b, rhoWad);
     }
 
     function setRiskParams(uint256 z, uint256 sqrtT, uint256 safety) external onlyOwner {
+        if (z == 0 || z > 10e18 || sqrtT == 0 || sqrtT > 1e18 || safety < 1e18 || safety > 10e18) {
+            revert InvalidRiskParameter();
+        }
         zScore = z;
         horizonSqrt = sqrtT;
         varSafetyFactor = safety;
         emit RiskParamsUpdated(z, sqrtT, safety);
     }
 
+    function setMaxLtv(uint256 newMaxLtvWad) external onlyOwner {
+        if (newMaxLtvWad == 0 || newMaxLtvWad > 0.9e18) revert InvalidRiskParameter();
+        maxLtvWad = newMaxLtvWad;
+        emit MaxLtvUpdated(newMaxLtvWad);
+    }
+
     function setSigmaCore(ISigmaCore newCore) external onlyOwner {
+        if (address(newCore) == address(0) || address(newCore).code.length == 0) {
+            revert InvalidAddress();
+        }
         sigmaCore = newCore;
     }
 
     function setOracle(IOracleAdapter newOracle) external onlyOwner {
+        if (address(newOracle) == address(0) || address(newOracle).code.length == 0) {
+            revert InvalidAddress();
+        }
         oracle = newOracle;
     }
 
@@ -205,11 +243,7 @@ contract SigmaVault is ReentrancyGuard, Ownable {
     }
 
     /// @notice Withdraw collateral on behalf of `user`. Stock is delivered to `user`.
-    function withdrawFor(address user, address stock, uint256 amount)
-        external
-        asUser(user)
-        nonReentrant
-    {
+    function withdrawFor(address user, address stock, uint256 amount) external asUser(user) nonReentrant {
         if (!isSupported[stock]) revert NotSupported();
         if (amount == 0) revert ZeroAmount();
         if (collateral[user][stock] < amount) revert InsufficientCollateral();
@@ -219,16 +253,19 @@ contract SigmaVault is ReentrancyGuard, Ownable {
         emit Withdrawn(user, stock, amount);
     }
 
-    function liquidate(address user, address seizeStock, uint256 seizeAmount, uint256 repayUsdc)
-        external
-        nonReentrant
-    {
+    function liquidate(address user, address seizeStock, uint256 seizeAmount, uint256 repayUsdc) external nonReentrant {
+        if (seizeAmount == 0 || repayUsdc == 0) revert ZeroAmount();
         if (_isHealthy(user)) revert Healthy();
         if (!isSupported[seizeStock]) revert NotSupported();
         if (collateral[user][seizeStock] < seizeAmount) revert InsufficientCollateral();
 
         uint256 owed = debt[user];
-        uint256 pay = repayUsdc > owed ? owed : repayUsdc;
+        uint256 maxRepay = Math.mulDiv(owed, LIQUIDATION_CLOSE_FACTOR_WAD, WAD, Math.Rounding.Ceil);
+        uint256 pay = Math.min(repayUsdc, maxRepay);
+        uint256 seizeValue6 = Math.mulDiv(seizeAmount, oracle.getPrice(seizeStock), 1e30, Math.Rounding.Ceil);
+        uint256 maxSeizeValue6 = Math.mulDiv(pay, LIQUIDATION_BONUS_WAD, WAD);
+        if (seizeValue6 > maxSeizeValue6) revert ExcessiveSeizure();
+
         debt[user] = owed - pay;
         collateral[user][seizeStock] -= seizeAmount;
 
@@ -300,7 +337,9 @@ contract SigmaVault is ReentrancyGuard, Ownable {
         uint256 pv = portfolioValue(user);
         uint256 var_ = computeVaR(user);
         uint256 safety = (var_ * varSafetyFactor) / 1e18;
-        return pv > safety ? pv - safety : 0;
+        uint256 varBound = pv > safety ? pv - safety : 0;
+        uint256 ltvBound = Math.mulDiv(pv, maxLtvWad, WAD);
+        return Math.min(varBound, ltvBound);
     }
 
     /// @notice Health factor in WAD: maxBorrowable / debt. >1e18 means healthy.

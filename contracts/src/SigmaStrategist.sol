@@ -55,6 +55,8 @@ contract SigmaStrategist is ReentrancyGuard {
     error ConcentrationExceeded();
     error HealthBelowMin();
     error UnsupportedAction();
+    error NothingToRepay();
+    error InvalidPolicy();
 
     constructor(SigmaVault _vault) {
         vault = _vault;
@@ -66,6 +68,7 @@ contract SigmaStrategist is ReentrancyGuard {
     function register(Policy calldata p) external {
         require(p.agent != address(0), "agent=0");
         require(p.minHealthFactor >= 1e18, "minHF<1");
+        if (p.maxStockShare > 1e18) revert InvalidPolicy();
         policyOf[msg.sender] = Policy({
             agent: p.agent,
             maxBorrow6: p.maxBorrow6,
@@ -106,9 +109,12 @@ contract SigmaStrategist is ReentrancyGuard {
             vault.borrowFor(user, amount);
         } else if (action == ActionType.Repay) {
             uint256 amount = abi.decode(data, (uint256));
-            usdc.safeTransferFrom(user, address(this), amount);
-            usdc.forceApprove(address(vault), amount);
-            vault.repayFor(user, amount);
+            uint256 owed = vault.debt(user);
+            uint256 pay = amount > owed ? owed : amount;
+            if (pay == 0) revert NothingToRepay();
+            usdc.safeTransferFrom(user, address(this), pay);
+            usdc.forceApprove(address(vault), pay);
+            vault.repayFor(user, pay);
         } else if (action == ActionType.Withdraw) {
             (address stock, uint256 amount) = abi.decode(data, (address, uint256));
             vault.withdrawFor(user, stock, amount);

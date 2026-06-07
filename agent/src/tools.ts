@@ -10,9 +10,25 @@ import { readMarketRegime } from "./regime.js";
 const addr = z
   .string()
   .regex(/^0x[a-fA-F0-9]{40}$/, "must be a 0x-prefixed 20-byte address");
+const positiveUint = z
+  .string()
+  .regex(/^[1-9][0-9]*$/, "must be a positive base-10 integer");
 
 export function buildTools(user: Address) {
   const pilot = pilotAddress();
+  let actionAttempted = false;
+
+  const submitOnce = async (
+    action: ActionTypeName,
+    data: `0x${string}`,
+    rationale: string,
+  ) => {
+    if (actionAttempted) {
+      throw new Error("Only one mutating action may be attempted per Pilot tick");
+    }
+    actionAttempted = true;
+    return submitAction(user, action, data, rationale);
+  };
 
   return {
     getPortfolioState: tool({
@@ -41,11 +57,12 @@ export function buildTools(user: Address) {
       inputSchema: z.object({
         amount6: z
           .string()
+          .pipe(positiveUint)
           .describe("USDC amount in 6-decimal units, as a string (bigint-safe)"),
-        rationale: z.string().min(20),
+        rationale: z.string().min(20).max(512),
       }),
       execute: async ({ amount6, rationale }) => {
-        return submitAction(user, "Borrow", encodeUint256(BigInt(amount6)), rationale);
+        return submitOnce("Borrow", encodeUint256(BigInt(amount6)), rationale);
       },
     }),
 
@@ -53,11 +70,11 @@ export function buildTools(user: Address) {
       description:
         "Repay USDC debt on behalf of the user. Requires user to have approved the Strategist on USDC.",
       inputSchema: z.object({
-        amount6: z.string().describe("USDC amount in 6-decimal units"),
-        rationale: z.string().min(20),
+        amount6: z.string().pipe(positiveUint).describe("USDC amount in 6-decimal units"),
+        rationale: z.string().min(20).max(512),
       }),
       execute: async ({ amount6, rationale }) => {
-        return submitAction(user, "Repay", encodeUint256(BigInt(amount6)), rationale);
+        return submitOnce("Repay", encodeUint256(BigInt(amount6)), rationale);
       },
     }),
 
@@ -68,15 +85,16 @@ export function buildTools(user: Address) {
         stock: addr,
         amount18: z
           .string()
+          .pipe(positiveUint)
           .describe("stock token amount in 18-decimal units"),
-        rationale: z.string().min(20),
+        rationale: z.string().min(20).max(512),
       }),
       execute: async ({ stock, amount18, rationale }) => {
         const data = encodeAbiParameters(
           [{ type: "address" }, { type: "uint256" }],
           [stock as Address, BigInt(amount18)],
         );
-        return submitAction(user, "Withdraw", data, rationale);
+        return submitOnce("Withdraw", data, rationale);
       },
     }),
   };
@@ -112,7 +130,8 @@ async function submitAction(
       args: [user, ActionType[action], data, rationale],
     });
   } catch (e) {
-    return `SIMULATION REVERTED: ${(e as Error).message.split("\n")[0] ?? String(e)}`;
+    const reason = (e as Error).message.split("\n")[0] ?? String(e);
+    throw new Error(`SIMULATION REVERTED: ${reason}`);
   }
 
   const hash = await wc.writeContract({

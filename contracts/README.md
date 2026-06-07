@@ -1,66 +1,22 @@
-## Foundry
+# Sigma contracts
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Foundry project for the Solidity layer of Sigma.
 
-Foundry consists of:
+## Components
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+- `SigmaVault.sol`: tokenized-stock collateral, USDC debt, VaR and base-LTV checks, bounded liquidation.
+- `SigmaStrategist.sol`: user policy registration and agent-only guarded execution.
+- `ChainlinkOracleAdapter.sol`: Chainlink-compatible feeds with staleness checks plus an explicit testnet fallback.
+- `ISigmaCore.sol`: interface to the Stylus VaR engine.
 
-## Documentation
+## Verify
 
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
+```bash
+forge fmt --check
+forge build
+forge test -vv
 ```
 
-### Test
+## Trust model
 
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+The owner can add assets, update risk inputs, replace the oracle/Core, and set fallback prices. The demo owner is an EOA. A production version requires governance delay, multisig control, monitored feeds, and an independent audit.

@@ -1,12 +1,5 @@
 import { DEPLOYMENT, EXPLORER } from "@/lib/contracts";
 
-// Numbers are pulled from the cargo-stylus check + on-chain VaR call results.
-// Stylus VaR gas: ~80k (observed). Naive Solidity equivalent in published
-// benchmarks for a 5-asset parametric VaR: ~3.2M. 40× headline ratio.
-const STYLUS_GAS = 80_000;
-const SOLIDITY_GAS = 3_200_000;
-const RATIO = SOLIDITY_GAS / STYLUS_GAS;
-
 export function StylusShowcase() {
   return (
     <section id="stylus" className="border-b border-border bg-surface">
@@ -22,20 +15,23 @@ export function StylusShowcase() {
           <div className="col-span-12 md:col-span-5 text-muted">
             Parametric portfolio VaR computed in Rust, compiled to WASM, activated on
             Robinhood Chain. Every borrow on the Sigma Vault is bounded by this number;
-            it is cheap enough to compute every block.
+            the Vault computes it during borrow and collateral-withdrawal checks.
           </div>
         </div>
 
         <div className="grid grid-cols-12 gap-px bg-border border border-border">
           <div className="col-span-12 md:col-span-7 bg-bg p-6">
-            <p className="eyebrow mb-4">
-              Gas per <span className="text-text">compute_portfolio_var</span> call
-            </p>
-            <GasBar label="Stylus (WASM)" gas={STYLUS_GAS} accent max={SOLIDITY_GAS} />
-            <div className="h-3" />
-            <GasBar label="Solidity (naive)" gas={SOLIDITY_GAS} max={SOLIDITY_GAS} />
-            <p className="eyebrow mt-6">
-              ratio · <span className="text-accent">{RATIO.toFixed(0)}× cheaper</span>
+            <p className="eyebrow mb-5">Implementation profile</p>
+            <div className="grid grid-cols-2 gap-px bg-border">
+              <Metric label="Runtime" value="Rust · WASM" />
+              <Metric label="Risk model" value="Parametric VaR" />
+              <Metric label="Math scale" value="WAD · 1e18" />
+              <Metric label="Complexity" value="O(n²) covariance" />
+            </div>
+            <p className="text-sm text-muted mt-5">
+              Stylus activation and analytical correctness are reproducible in this repo.
+              An apples-to-apples Solidity gas benchmark is still pending, so Sigma does
+              not claim a measured multiplier here.
             </p>
           </div>
           <div className="col-span-12 md:col-span-5 bg-bg p-6 flex flex-col justify-between">
@@ -71,30 +67,11 @@ on-chain stylus →  $22,584   (Δ 0.02%)`}
   );
 }
 
-function GasBar({
-  label,
-  gas,
-  max,
-  accent,
-}: {
-  label: string;
-  gas: number;
-  max: number;
-  accent?: boolean;
-}) {
-  const width = Math.max(2, (gas / max) * 100);
+function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <div className="flex items-baseline justify-between mb-2">
-        <span className="text-sm">{label}</span>
-        <span className="font-mono text-sm">{gas.toLocaleString()} gas</span>
-      </div>
-      <div className="h-3 bg-border relative overflow-hidden">
-        <div
-          className={`h-full ${accent ? "bg-accent" : "bg-muted"}`}
-          style={{ width: `${width}%` }}
-        />
-      </div>
+    <div className="bg-bg p-4">
+      <p className="eyebrow mb-2">{label}</p>
+      <p className="font-mono text-sm text-accent">{value}</p>
     </div>
   );
 }

@@ -36,7 +36,7 @@ contract SigmaStrategistTest is Test {
         vault = new SigmaVault(IERC20(address(usdc)), ISigmaCore(address(core)), IOracleAdapter(address(oracle)), owner);
         strategist = new SigmaStrategist(vault);
 
-        vault.addStock(address(aapl), 0.20e18);
+        vault.addStock(address(aapl), 0.2e18);
         oracle.setPrice(address(aapl), 200e18);
         usdc.mint(address(vault), 10_000_000e6);
         vm.stopPrank();
@@ -96,6 +96,15 @@ contract SigmaStrategistTest is Test {
         strategist.executeAction(alice, SigmaStrategist.ActionType.Borrow, abi.encode(uint256(15_000e6)), "over cap");
     }
 
+    function test_register_rejects_stock_share_above_one() public {
+        SigmaStrategist.Policy memory invalid = basePolicy;
+        invalid.maxStockShare = 1e18 + 1;
+
+        vm.prank(alice);
+        vm.expectRevert(SigmaStrategist.InvalidPolicy.selector);
+        strategist.register(invalid);
+    }
+
     function test_cooldown_blocks_back_to_back_actions() public {
         _register(basePolicy);
 
@@ -131,6 +140,26 @@ contract SigmaStrategistTest is Test {
         assertEq(vault.debt(alice), 0);
     }
 
+    function test_repay_above_debt_does_not_trap_excess_usdc() public {
+        _register(basePolicy);
+
+        vm.prank(pilot);
+        strategist.executeAction(alice, SigmaStrategist.ActionType.Borrow, abi.encode(uint256(5_000e6)), "borrow");
+        vm.warp(block.timestamp + 61);
+
+        vm.prank(owner);
+        usdc.mint(alice, 5_000e6);
+        vm.prank(alice);
+        usdc.approve(address(strategist), type(uint256).max);
+
+        vm.prank(pilot);
+        strategist.executeAction(alice, SigmaStrategist.ActionType.Repay, abi.encode(uint256(10_000e6)), "repay debt");
+
+        assertEq(vault.debt(alice), 0);
+        assertEq(usdc.balanceOf(alice), 5_000e6);
+        assertEq(usdc.balanceOf(address(strategist)), 0);
+    }
+
     function test_deactivate_locks_agent_out() public {
         _register(basePolicy);
 
@@ -154,6 +183,8 @@ contract SigmaStrategistTest is Test {
 
         vm.prank(pilot);
         vm.expectRevert(SigmaStrategist.HealthBelowMin.selector);
-        strategist.executeAction(alice, SigmaStrategist.ActionType.Borrow, abi.encode(uint256(8_000e6)), "too aggressive");
+        strategist.executeAction(
+            alice, SigmaStrategist.ActionType.Borrow, abi.encode(uint256(8_000e6)), "too aggressive"
+        );
     }
 }

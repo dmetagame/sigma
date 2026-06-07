@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { clash, satoshi, geistMono, cinzel } from "./fonts";
+import { clash, satoshi, geistMono } from "./fonts";
 import { Providers } from "./providers";
 import "./globals.css";
 
@@ -13,7 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
-      className={`${clash.variable} ${satoshi.variable} ${geistMono.variable} ${cinzel.variable}`}
+      className={`${clash.variable} ${satoshi.variable} ${geistMono.variable}`}
     >
       <body>
         <Providers>{children}</Providers>

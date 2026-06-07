@@ -1,6 +1,6 @@
 "use client";
 
-import { useAccount, useReadContract, useReadContracts } from "wagmi";
+import { useAccount, useReadContracts } from "wagmi";
 import { DEPLOYMENT } from "@/lib/contracts";
 import { vaultAbi, oracleAbi, erc20Abi } from "@/lib/abis";
 import { usd, num, wad } from "@/lib/format";
@@ -10,7 +10,7 @@ export function PortfolioPanel() {
   const account = useAccount();
   const user = account.address ?? DEPLOYMENT.demoUser;
 
-  const { data: vaultReads } = useReadContracts({
+  const { data: vaultReads, isError: vaultReadError } = useReadContracts({
     contracts: [
       {
         address: DEPLOYMENT.sigmaVault,
@@ -77,7 +77,7 @@ export function PortfolioPanel() {
     [user],
   );
 
-  const { data: posData } = useReadContracts({
+  const { data: posData, isError: positionReadError } = useReadContracts({
     contracts: positionContracts,
     query: { refetchInterval: 6_000 },
   });
@@ -103,11 +103,18 @@ export function PortfolioPanel() {
           </div>
           <div className="col-span-12 md:col-span-5 text-muted">
             Every number below is read directly from the deployed contracts every
-            6 seconds via viem. No backend, no caching layer.
+            6 seconds via viem. Prices in this testnet deployment are owner-seeded
+            fallback values, not live market feeds.
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-border border border-border">
+        {(vaultReadError || positionReadError) && (
+          <div className="mb-4 border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+            Some contract reads failed. Displayed placeholders are not position values.
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-px bg-border border border-border">
           <Stat label="Portfolio value" value={usd(portfolioValue)} accent />
           <Stat label="Debt" value={usd(debt)} />
           <Stat
@@ -120,7 +127,7 @@ export function PortfolioPanel() {
         </div>
 
         <div className="mt-10 panel">
-          <div className="grid grid-cols-12 gap-4 px-5 py-3 border-b border-border">
+          <div className="hidden md:grid grid-cols-12 gap-4 px-5 py-3 border-b border-border">
             <p className="eyebrow col-span-3">Asset</p>
             <p className="eyebrow col-span-2 text-right">Vault qty</p>
             <p className="eyebrow col-span-2 text-right">Wallet qty</p>
@@ -130,20 +137,28 @@ export function PortfolioPanel() {
           {positions.map((p) => (
             <div
               key={p.address}
-              className="grid grid-cols-12 gap-4 px-5 py-4 border-b border-border last:border-b-0 items-center"
+              className="grid grid-cols-2 gap-4 md:grid-cols-12 px-5 py-4 border-b border-border last:border-b-0 items-center"
             >
-              <div className="col-span-3 flex items-center gap-3">
+              <div className="col-span-2 md:col-span-3 flex items-center gap-3">
                 <span className="font-display text-xl">{p.symbol}</span>
                 <span className="font-mono text-xs text-muted hidden md:inline">
                   {p.address.slice(0, 6)}…{p.address.slice(-4)}
                 </span>
               </div>
-              <div className="col-span-2 text-right font-mono">{num(p.amount)}</div>
-              <div className="col-span-2 text-right font-mono text-muted">
+              <div className="md:col-span-2 md:text-right font-mono">
+                <span className="eyebrow block md:hidden">Vault qty</span>
+                {num(p.amount)}
+              </div>
+              <div className="md:col-span-2 text-right font-mono text-muted">
+                <span className="eyebrow block md:hidden">Wallet qty</span>
                 {num(p.walletBal)}
               </div>
-              <div className="col-span-2 text-right font-mono">{usd(p.priceWad, 18)}</div>
-              <div className="col-span-3 text-right font-mono">
+              <div className="md:col-span-2 md:text-right font-mono">
+                <span className="eyebrow block md:hidden">Demo price</span>
+                {usd(p.priceWad, 18)}
+              </div>
+              <div className="md:col-span-3 text-right font-mono">
+                <span className="eyebrow block md:hidden">Value</span>
                 {p.value6 !== undefined && p.value6 > 0n ? (
                   <span className="text-accent">{usd(p.value6)}</span>
                 ) : (
@@ -170,7 +185,7 @@ function Stat({
   accent?: boolean;
 }) {
   return (
-    <div className="bg-bg p-5">
+    <div className="bg-bg p-5 last:sm:col-span-2 last:md:col-span-1">
       <p className="eyebrow mb-3">{label}</p>
       <p
         className={`font-mono text-2xl md:text-3xl tracking-tight ${

@@ -1,13 +1,16 @@
 "use client";
 
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { shortAddr } from "@/lib/format";
+import { robinhoodTestnet } from "@/lib/chain";
 
 export function Header() {
   const { address, isConnected, chainId } = useAccount();
   const { connect } = useConnect();
   const { disconnect } = useDisconnect();
+  const { switchChain } = useSwitchChain();
+  const wrongChain = isConnected && chainId !== robinhoodTestnet.id;
 
   return (
     <header className="border-b border-border">
@@ -34,6 +37,14 @@ export function Header() {
         <div className="flex items-center gap-3">
           {isConnected ? (
             <>
+              {wrongChain && (
+                <button
+                  onClick={() => switchChain({ chainId: robinhoodTestnet.id })}
+                  className="font-mono text-xs border border-amber-400 text-amber-300 px-2 py-1"
+                >
+                  switch network
+                </button>
+              )}
               <span className="font-mono text-xs text-muted hidden sm:inline">
                 chain {chainId}
               </span>

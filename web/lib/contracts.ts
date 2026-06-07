@@ -5,6 +5,7 @@ export const DEPLOYMENT = {
   sigmaCore: "0x3517b74800E6A731656D8cc809d77f730da4d1dA" as Address,
   sigmaVault: "0xF0221bDE2cdf11b9855F91B491597076d27804Cf" as Address,
   sigmaStrategist: "0xB4821E0617b8e3c8Ddd7359A9f338e7176A0633b" as Address,
+  sigmaStrategistDeploymentBlock: 69_611_116n,
   oracleAdapter: "0x0d22DdC5d0Da0E4988b04E0647b4643e7BDfFc79" as Address,
   usdc: "0xAc80194dc1aE8eF52df73e7e1864fB3C62290fe0" as Address,
   stocks: [

@@ -175,7 +175,7 @@ mod test {
     }
 
     fn wad_i_from(x: i128, denom: i128) -> I256 {
-        let scaled = (x.unsigned_abs() as u128).saturating_mul(WAD as u128) / denom.unsigned_abs() as u128;
+        let scaled = x.unsigned_abs().saturating_mul(WAD as u128) / denom.unsigned_abs();
         let s = I256::try_from(U256::from(scaled)).unwrap();
         if x.signum() < 0 { -s } else { s }
     }
@@ -190,24 +190,14 @@ mod test {
         let weights = alloc::vec![wad_from(1, 2), wad_from(1, 2)]; // 0.5, 0.5
         let vols = alloc::vec![wad_from(20, 100), wad_from(30, 100)]; // 0.20, 0.30
         // packed upper-tri for n=2: [ρ00, ρ01, ρ11] = [1, 0.5, 1]
-        let corr = alloc::vec![
-            wad_i_from(1, 1),
-            wad_i_from(1, 2),
-            wad_i_from(1, 1),
-        ];
+        let corr = alloc::vec![wad_i_from(1, 1), wad_i_from(1, 2), wad_i_from(1, 1),];
         let portfolio_value = U256::from(1_000_000u64).saturating_mul(U256::from(1_000_000u64)); // $1M in USDC 6-dec
         let z = wad_from(1645, 1000); // 1.645
         // √(1/252) ≈ 0.0629941 → in WAD: 62_994_079_237_678_000
         let horizon_sqrt = U256::from(62_994_079_237_678_000u128);
 
-        let var = contract.compute_portfolio_var(
-            weights,
-            vols,
-            corr,
-            portfolio_value,
-            z,
-            horizon_sqrt,
-        );
+        let var =
+            contract.compute_portfolio_var(weights, vols, corr, portfolio_value, z, horizon_sqrt);
 
         // Expected ≈ $22,580 = 22_580_000_000 (6-decimal USDC). Allow ±2% for sqrt rounding.
         let lo = U256::from(22_000_000_000u64);

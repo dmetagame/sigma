@@ -1,6 +1,5 @@
 import localFont from "next/font/local";
 import { GeistMono } from "geist/font/mono";
-import { Cinzel } from "next/font/google";
 
 export const clash = localFont({
   src: [
@@ -21,10 +20,3 @@ export const satoshi = localFont({
 });
 
 export const geistMono = GeistMono;
-
-export const cinzel = Cinzel({
-  subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-accent",
-  display: "swap",
-});

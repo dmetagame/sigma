@@ -10,5 +10,14 @@
     "build": "pnpm -r build",
     "contracts:build": "pnpm --filter @sigma/contracts build",
     "core:check": "cd core && cargo stylus check --endpoint https://rpc.testnet.chain.robinhood.com"
+  },
+  "pnpm": {
+    "overrides": {
+      "next>postcss": "8.5.15",
+      "viem>ws": "8.20.1",
+      "@metamask/sdk>uuid": "11.1.1",
+      "@metamask/sdk-communication-layer>uuid": "11.1.1",
+      "@metamask/utils>uuid": "11.1.1"
+    }
   }
 }

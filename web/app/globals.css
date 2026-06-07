@@ -83,7 +83,7 @@
   }
 
   .accent-serif {
-    font-family: var(--font-accent), serif;
+    font-family: Georgia, "Times New Roman", serif;
     font-weight: 400;
   }
 
