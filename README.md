@@ -10,7 +10,7 @@ Live app: https://sigma-two-iota.vercel.app
 
 Tokenized stocks need portfolio-aware collateral controls before they can support responsible on-chain credit. Sigma computes parametric portfolio VaR in Stylus (Rust/WASM), applies it inside a Solidity vault, and exposes policy-bound actions to an AI risk agent.
 
-The current Robinhood Chain testnet deployment is a hackathon prototype. Its stock prices, volatilities, correlations, and off-chain market-regime signal are seeded demo inputs. The contracts and UI identify those assumptions rather than presenting them as production market data.
+The current Robinhood Chain testnet deployment is a hackathon prototype. Stock prices are published by a dedicated reporter only after Pyth and RedStone agree within 2%; volatilities, correlations, and the off-chain market-regime signal remain illustrative model inputs.
 
 ## Architecture
 
@@ -19,7 +19,7 @@ The current Robinhood Chain testnet deployment is a hackathon prototype. Its sto
 | Sigma Core | Stylus (Rust) | On-chain `compute_portfolio_var()` — fixed-point math, gas-optimized via WASM |
 | Sigma Vault | Solidity | Non-custodial collateral vault: tokenized stocks + USDC, dynamic LTV from Core |
 | Sigma Strategist | Solidity | Agent-bound policy executor with on-chain guardrails |
-| Sigma Pilot | TypeScript / AI SDK | Gemini or Claude agent: demo regime signal → policy-bound action |
+| Sigma Pilot | TypeScript / AI SDK | Gemini agent: demo regime signal → policy-bound action |
 | Sigma Web | Next.js 16 | Dashboard: portfolio, risk model, deployment proof, decision log |
 
 All on **Robinhood Chain testnet** (chain ID 46630). Stylus support was verified via `cargo stylus check` against `https://rpc.testnet.chain.robinhood.com` on 2026-06-05.
@@ -30,6 +30,8 @@ All on **Robinhood Chain testnet** (chain ID 46630). Stylus support was verified
 - An 80% base-LTV ceiling backs up the dynamic VaR limit.
 - Asset decimals, volatility, correlations, and global risk parameters are validated.
 - The agent can attempt at most one mutating action per tick and reads policy/cooldown/repayment capacity first.
+- The oracle enforces timestamp monotonicity, freshness, sequential-deviation limits, and owner-controlled emergency pause.
+- GitHub Actions hosts both the 30-minute oracle updater and six-hour policy-constrained Pilot tick.
 - This code has not received an independent professional audit and is not suitable for mainnet funds.
 - The hardened Solidity deployment below was broadcast and seeded on 2026-06-07. The earlier Vault and Strategist addresses are legacy demo contracts and should not be used.
 
@@ -40,7 +42,8 @@ All on **Robinhood Chain testnet** (chain ID 46630). Stylus support was verified
 | Sigma Core (Stylus) | `0x3517b74800E6A731656D8cc809d77f730da4d1dA` |
 | Sigma Vault | `0xB2aFb921AA8cE9F53f678782840216661f0d849d` |
 | Sigma Strategist | `0x506aB1734D63748F0aDBCB74C13187E96A0D803a` |
-| Oracle Adapter | `0x148E41B44f53a31D2C040663bEA26CA392aB59bb` |
+| Oracle Adapter | `0x49E038450866157b3B0f790992690EcE842602E0` |
+| Solidity benchmark core | `0x3f64d310B88f8c89aFd70ccCD33094DF7e7c3a91` |
 
 ## Repository layout
 
@@ -57,14 +60,14 @@ sigma/
 
 ```bash
 pnpm install
-cd contracts && forge test           # 22 passing
+cd contracts && forge test           # 36 passing
 cd ../core   && cargo test --release # 3 passing
 ```
 
 ### Deploy to Robinhood Chain testnet
 
 ```bash
-cp .env.example .env.local           # fill deployer, Pilot, and one supported LLM API key
+cp .env.example .env.local           # fill deployer, funded reporter, Pilot, and Google AI key
 ./scripts/deploy.sh                  # phase 1 (Stylus) + phase 2 (Solidity)
 ./scripts/seed-demo.sh               # fund and create the public testnet demo
 pnpm verify:deployment               # read-only on-chain smoke test
@@ -86,12 +89,13 @@ Get them from `https://faucet.testnet.chain.robinhood.com` (drips ETH + 5 of eac
 ## Known prototype limits
 
 - The vault is a funded credit demo, not a complete lending market: there are no lender shares, interest accrual, reserves, or bad-debt socialization.
-- The fallback oracle is owner-controlled. Production deployment requires live feeds, staleness limits, and an emergency process governed by a multisig/timelock.
+- The testnet oracle reporter is centralized even though it cross-checks two independent sources. Production requires on-chain verified feeds, monitoring, and multisig/timelock governance.
 - VaR is a model input, not a guarantee against jumps, liquidity gaps, or non-normal returns.
-- The Pilot runs from a CLI; continuous automation and user transaction flows are not yet hosted in the web app.
-- A reproducible Solidity-versus-Stylus gas benchmark is still pending. No gas-reduction multiplier is claimed.
+- The Pilot is scheduled in GitHub Actions, but user policy registration and transaction flows are not yet exposed in the web app.
+- At block `70915096`, the deployed five-asset benchmark measured 122,318 gas for Stylus and 128,960 for Solidity, a 5.15% saving. It is one workload, not a universal multiplier.
 
 Deployment receipts and demo-state evidence are recorded in [`docs/DEPLOYMENT-2026-06-07.md`](docs/DEPLOYMENT-2026-06-07.md).
+The maintainer security review and external-audit handoff are in [`docs/SECURITY-REVIEW-2026-06-07.md`](docs/SECURITY-REVIEW-2026-06-07.md) and [`docs/INDEPENDENT-AUDIT-SCOPE.md`](docs/INDEPENDENT-AUDIT-SCOPE.md).
 
 ## Robinhood Chain testnet
 

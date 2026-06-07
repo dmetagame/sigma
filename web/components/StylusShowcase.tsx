@@ -29,9 +29,10 @@ export function StylusShowcase() {
               <Metric label="Complexity" value="O(n²) covariance" />
             </div>
             <p className="text-sm text-muted mt-5">
-              Stylus activation and analytical correctness are reproducible in this repo.
-              An apples-to-apples Solidity gas benchmark is still pending, so Sigma does
-              not claim a measured multiplier here.
+              The deployed five-asset benchmark returns the same result from both cores:
+              At block 70,915,096, Stylus uses 122,318 gas versus 128,960 for Solidity,
+              a measured 5.15% saving.
+              Run <code className="font-mono text-text">npm run benchmark:gas</code> to reproduce it.
             </p>
           </div>
           <div className="col-span-12 md:col-span-5 bg-bg p-6 flex flex-col justify-between">

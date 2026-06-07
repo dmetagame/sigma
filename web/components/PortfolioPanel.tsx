@@ -136,8 +136,8 @@ export function PortfolioPanel() {
           </div>
           <div className="col-span-12 md:col-span-5 text-muted">
             Every number below is read directly from the deployed contracts every
-            6 seconds via viem. Prices in this testnet deployment are owner-seeded
-            fallback values, not live market feeds.
+            6 seconds via viem. A dedicated reporter publishes prices only after Pyth
+            and RedStone agree within 2%; this remains a testnet trust model.
           </div>
         </div>
 
@@ -187,7 +187,7 @@ export function PortfolioPanel() {
                 {num(p.walletBal)}
               </div>
               <div className="md:col-span-2 md:text-right font-mono">
-                <span className="eyebrow block md:hidden">Demo price</span>
+                <span className="eyebrow block md:hidden">Oracle price</span>
                 {usd(p.priceWad, 18)}
               </div>
               <div className="md:col-span-3 text-right font-mono">

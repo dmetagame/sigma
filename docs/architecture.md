@@ -9,7 +9,7 @@
 └─────────────────────────┬──────────────────────────────────┘
                           │ Wagmi / Viem
 ┌─────────────────────────┴──────────────────────────────────┐
-│         Sigma Pilot (TS, AI SDK, Claude)                   │
+│         Sigma Pilot (TS, AI SDK, Gemini)                   │
 │  Tools: getRiskMetrics · proposeRebalance · executeAction  │
 └─────────────────────────┬──────────────────────────────────┘
                           │ signed tx

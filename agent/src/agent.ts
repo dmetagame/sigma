@@ -1,4 +1,3 @@
-import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
 import { generateText, stepCountIs, type LanguageModel } from "ai";
 import { type Address } from "viem";
@@ -7,9 +6,7 @@ import { buildTools } from "./tools.js";
 import { pilotAddress } from "./client.js";
 
 function model(): LanguageModel {
-  return env.PILOT_PROVIDER === "google"
-    ? google(env.PILOT_MODEL)
-    : anthropic(env.PILOT_MODEL);
+  return google(env.PILOT_MODEL);
 }
 
 const SYSTEM_PROMPT = `You are Sigma Pilot, an autonomous risk-management agent operating an on-chain

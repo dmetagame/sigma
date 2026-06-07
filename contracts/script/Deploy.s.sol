@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {SigmaVault} from "../src/SigmaVault.sol";
 import {SigmaStrategist} from "../src/SigmaStrategist.sol";
-import {ChainlinkOracleAdapter} from "../src/ChainlinkOracleAdapter.sol";
+import {CrossCheckedOracleAdapter} from "../src/CrossCheckedOracleAdapter.sol";
 import {IOracleAdapter} from "../src/IOracleAdapter.sol";
 import {ISigmaCore} from "../src/ISigmaCore.sol";
 
@@ -43,12 +43,12 @@ contract Deploy is Script {
         address addr;
         string symbol;
         uint256 volWad; // annualized
-        uint256 priceWad; // USDC-denominated, fallback for oracle adapter
     }
 
     function run() external returns (address vault, address strategist, address oracle) {
         uint256 pk = vm.envUint("DEPLOYER_PRIVATE_KEY");
         address coreAddr = vm.envAddress("SIGMA_CORE_ADDR");
+        address oracleReporter = vm.envAddress("ORACLE_REPORTER_ADDRESS");
 
         address usdc = _envOr("USDC_ADDR", DEFAULT_USDC);
         address tsla = _envOr("STOCK_TSLA_ADDR", DEFAULT_TSLA);
@@ -58,11 +58,11 @@ contract Deploy is Script {
         address pltr = _envOr("STOCK_PLTR_ADDR", DEFAULT_PLTR);
 
         StockSpec[5] memory stocks = [
-            StockSpec(tsla, "TSLA", 0.45e18, 280e18),
-            StockSpec(amd, "AMD", 0.5e18, 165e18),
-            StockSpec(amzn, "AMZN", 0.32e18, 195e18),
-            StockSpec(nflx, "NFLX", 0.4e18, 660e18),
-            StockSpec(pltr, "PLTR", 0.65e18, 145e18)
+            StockSpec(tsla, "TSLA", 0.45e18),
+            StockSpec(amd, "AMD", 0.5e18),
+            StockSpec(amzn, "AMZN", 0.32e18),
+            StockSpec(nflx, "NFLX", 0.4e18),
+            StockSpec(pltr, "PLTR", 0.65e18)
         ];
 
         address deployer = vm.addr(pk);
@@ -72,12 +72,9 @@ contract Deploy is Script {
 
         vm.startBroadcast(pk);
 
-        // 1. Oracle adapter with fallback prices baked in for the demo.
-        ChainlinkOracleAdapter oracleAdapter = new ChainlinkOracleAdapter(deployer);
-        for (uint256 i = 0; i < stocks.length; i++) {
-            oracleAdapter.setFallback(stocks[i].addr, stocks[i].priceWad);
-            console.log("Seeded fallback price for", stocks[i].symbol);
-        }
+        // 1. Timestamped oracle updated by a dedicated reporter after Pyth and
+        //    RedStone equity prices pass the off-chain agreement check.
+        CrossCheckedOracleAdapter oracleAdapter = new CrossCheckedOracleAdapter(deployer, oracleReporter);
 
         // 2. Vault wired to Stylus Core + USDC + oracle.
         SigmaVault sv =

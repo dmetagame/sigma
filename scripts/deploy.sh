@@ -57,6 +57,13 @@ if [[ "$phase" == "solidity" || "$phase" == "all" ]]; then
   echo "→ Phase 2: forge script Deploy.s.sol"
   cd "$ROOT/contracts"
   : "${SIGMA_CORE_ADDR:?Set SIGMA_CORE_ADDR in .env.local first (or run with 'all')}"
+  : "${ORACLE_REPORTER_ADDRESS:?Set ORACLE_REPORTER_ADDRESS in .env.local}"
+  : "${ORACLE_REPORTER_PRIVATE_KEY:?Set ORACLE_REPORTER_PRIVATE_KEY in .env.local}"
+  reporter_from_key=$(cast wallet address --private-key "$ORACLE_REPORTER_PRIVATE_KEY")
+  if [[ "${reporter_from_key,,}" != "${ORACLE_REPORTER_ADDRESS,,}" ]]; then
+    echo "✘ ORACLE_REPORTER_ADDRESS does not match ORACLE_REPORTER_PRIVATE_KEY." >&2
+    exit 1
+  fi
   forge script script/Deploy.s.sol:Deploy \
     --rpc-url "$RH_TESTNET_RPC" \
     --broadcast \
@@ -69,8 +76,9 @@ if [[ "$phase" == "solidity" || "$phase" == "all" ]]; then
   echo "→ Syncing addresses into .env.local"
   vault=$(jq -r .sigmaVault deployments/rh-testnet.json)
   strat=$(jq -r .sigmaStrategist deployments/rh-testnet.json)
+  oracle=$(jq -r .oracleAdapter deployments/rh-testnet.json)
   usdc=$(jq -r .usdc deployments/rh-testnet.json)
-  for kv in "SIGMA_VAULT_ADDR=$vault" "SIGMA_STRATEGIST_ADDR=$strat" "USDC_ADDR=$usdc"; do
+  for kv in "SIGMA_VAULT_ADDR=$vault" "SIGMA_STRATEGIST_ADDR=$strat" "ORACLE_ADAPTER_ADDR=$oracle" "USDC_ADDR=$usdc"; do
     key="${kv%%=*}"
     if grep -q "^$key=" "$ROOT/.env.local"; then
       sed -i "s|^$key=.*|$kv|" "$ROOT/.env.local"
@@ -78,6 +86,14 @@ if [[ "$phase" == "solidity" || "$phase" == "all" ]]; then
       echo "$kv" >> "$ROOT/.env.local"
     fi
   done
+
+  export SIGMA_VAULT_ADDR=$vault
+  export SIGMA_STRATEGIST_ADDR=$strat
+  export ORACLE_ADAPTER_ADDR=$oracle
+  export USDC_ADDR=$usdc
+  echo "→ Publishing initial cross-checked oracle prices"
+  cd "$ROOT"
+  pnpm --filter @sigma/agent oracle:update
 fi
 
 echo "✓ Done."

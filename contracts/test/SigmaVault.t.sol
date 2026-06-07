@@ -190,6 +190,42 @@ contract SigmaVaultTest is Test {
         vault.setCorrelation(address(aapl), address(tsla), 1.01e18);
     }
 
+    function testFuzz_successfulBorrowAlwaysLeavesPositionHealthy(uint96 collateralAmount, uint96 borrowAmount) public {
+        uint256 shares = bound(uint256(collateralAmount), 1e18, 10_000e18);
+        _mint(aapl, alice, shares);
+        vm.startPrank(alice);
+        aapl.approve(address(vault), type(uint256).max);
+        vault.deposit(address(aapl), shares);
+        vm.stopPrank();
+
+        vm.prank(owner);
+        core.setVar(0);
+        uint256 limit = vault.maxBorrowable(alice);
+        uint256 amount = bound(uint256(borrowAmount), 1, limit);
+
+        vm.prank(alice);
+        vault.borrow(amount);
+        assertGe(vault.health(alice), 1e18);
+        assertLe(vault.debt(alice), vault.maxBorrowable(alice));
+    }
+
+    function testFuzz_liquidationNeverSeizesAboveConfiguredBonus(uint96 requestedRepay) public {
+        _makeAliceUnhealthy();
+        uint256 repay = bound(uint256(requestedRepay), 1e6, 7_500e6);
+        uint256 maxSeizeValue6 = (repay * vault.LIQUIDATION_BONUS_WAD()) / 1e18;
+        uint256 seizeAmount = (maxSeizeValue6 * 1e30) / 200e18;
+
+        vm.prank(owner);
+        usdc.mint(bob, repay);
+        vm.startPrank(bob);
+        usdc.approve(address(vault), type(uint256).max);
+        vault.liquidate(alice, address(aapl), seizeAmount, repay);
+        vm.stopPrank();
+
+        uint256 seizedValue6 = (seizeAmount * oracle.getPrice(address(aapl))) / 1e30;
+        assertLe(seizedValue6, maxSeizeValue6);
+    }
+
     function _makeAliceUnhealthy() internal {
         _mint(aapl, alice, 100e18);
         vm.startPrank(alice);
