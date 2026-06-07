@@ -1,97 +1,130 @@
 "use client";
 
-import { useAccount, useReadContracts } from "wagmi";
+import { useEffect, useState } from "react";
+import type { Address } from "viem";
 import { DEPLOYMENT } from "@/lib/contracts";
 import { vaultAbi, oracleAbi, erc20Abi } from "@/lib/abis";
 import { usd, num, wad } from "@/lib/format";
-import { useMemo } from "react";
+import { publicClient } from "@/lib/public-client";
+import { useWallet } from "@/lib/wallet";
+
+interface PositionRow {
+  symbol: string;
+  address: Address;
+  amount?: bigint;
+  priceWad?: bigint;
+  value6?: bigint;
+  walletBal?: bigint;
+}
+
+interface PortfolioSnapshot {
+  portfolioValue?: bigint;
+  debt?: bigint;
+  varUsd?: bigint;
+  maxBorrow?: bigint;
+  health?: bigint;
+  positions: PositionRow[];
+}
+
+const emptyPositions = () => DEPLOYMENT.stocks.map((stock) => ({ ...stock }));
 
 export function PortfolioPanel() {
-  const account = useAccount();
-  const user = account.address ?? DEPLOYMENT.demoUser;
+  const { address } = useWallet();
+  const user = address ?? DEPLOYMENT.demoUser;
+  const [snapshot, setSnapshot] = useState<PortfolioSnapshot>({ positions: emptyPositions() });
+  const [readError, setReadError] = useState(false);
 
-  const { data: vaultReads, isError: vaultReadError } = useReadContracts({
-    contracts: [
-      {
-        address: DEPLOYMENT.sigmaVault,
-        abi: vaultAbi,
-        functionName: "portfolioValue",
-        args: [user],
-      },
-      {
-        address: DEPLOYMENT.sigmaVault,
-        abi: vaultAbi,
-        functionName: "debt",
-        args: [user],
-      },
-      {
-        address: DEPLOYMENT.sigmaVault,
-        abi: vaultAbi,
-        functionName: "computeVaR",
-        args: [user],
-      },
-      {
-        address: DEPLOYMENT.sigmaVault,
-        abi: vaultAbi,
-        functionName: "maxBorrowable",
-        args: [user],
-      },
-      {
-        address: DEPLOYMENT.sigmaVault,
-        abi: vaultAbi,
-        functionName: "health",
-        args: [user],
-      },
-    ],
-    query: { refetchInterval: 6_000 },
-  });
+  useEffect(() => {
+    let cancelled = false;
 
-  const portfolioValue = vaultReads?.[0]?.result as bigint | undefined;
-  const debt = vaultReads?.[1]?.result as bigint | undefined;
-  const var_ = vaultReads?.[2]?.result as bigint | undefined;
-  const maxBorrow = vaultReads?.[3]?.result as bigint | undefined;
-  const health = vaultReads?.[4]?.result as bigint | undefined;
+    async function load() {
+      try {
+        const [portfolioValue, debt, varUsd, maxBorrow, health, positions] = await Promise.all([
+          publicClient.readContract({
+            address: DEPLOYMENT.sigmaVault,
+            abi: vaultAbi,
+            functionName: "portfolioValue",
+            args: [user],
+          }),
+          publicClient.readContract({
+            address: DEPLOYMENT.sigmaVault,
+            abi: vaultAbi,
+            functionName: "debt",
+            args: [user],
+          }),
+          publicClient.readContract({
+            address: DEPLOYMENT.sigmaVault,
+            abi: vaultAbi,
+            functionName: "computeVaR",
+            args: [user],
+          }),
+          publicClient.readContract({
+            address: DEPLOYMENT.sigmaVault,
+            abi: vaultAbi,
+            functionName: "maxBorrowable",
+            args: [user],
+          }),
+          publicClient.readContract({
+            address: DEPLOYMENT.sigmaVault,
+            abi: vaultAbi,
+            functionName: "health",
+            args: [user],
+          }),
+          Promise.all(
+            DEPLOYMENT.stocks.map(async (stock) => {
+              const [amount, priceWad, walletBal] = await Promise.all([
+                publicClient.readContract({
+                  address: DEPLOYMENT.sigmaVault,
+                  abi: vaultAbi,
+                  functionName: "collateral",
+                  args: [user, stock.address],
+                }),
+                publicClient.readContract({
+                  address: DEPLOYMENT.oracleAdapter,
+                  abi: oracleAbi,
+                  functionName: "getPrice",
+                  args: [stock.address],
+                }),
+                publicClient.readContract({
+                  address: stock.address,
+                  abi: erc20Abi,
+                  functionName: "balanceOf",
+                  args: [user],
+                }),
+              ]);
+              return {
+                ...stock,
+                amount,
+                priceWad,
+                walletBal,
+                value6: (amount * priceWad) / 10n ** 30n,
+              };
+            }),
+          ),
+        ]);
+        if (cancelled) return;
+        setSnapshot({
+          portfolioValue,
+          debt,
+          varUsd,
+          maxBorrow,
+          health,
+          positions,
+        });
+        setReadError(false);
+      } catch {
+        if (!cancelled) setReadError(true);
+      }
+    }
 
-  const positionContracts = useMemo(
-    () =>
-      DEPLOYMENT.stocks.flatMap((s) => [
-        {
-          address: DEPLOYMENT.sigmaVault,
-          abi: vaultAbi,
-          functionName: "collateral",
-          args: [user, s.address],
-        } as const,
-        {
-          address: DEPLOYMENT.oracleAdapter,
-          abi: oracleAbi,
-          functionName: "getPrice",
-          args: [s.address],
-        } as const,
-        {
-          address: s.address,
-          abi: erc20Abi,
-          functionName: "balanceOf",
-          args: [user],
-        } as const,
-      ]),
-    [user],
-  );
-
-  const { data: posData, isError: positionReadError } = useReadContracts({
-    contracts: positionContracts,
-    query: { refetchInterval: 6_000 },
-  });
-
-  const positions = DEPLOYMENT.stocks.map((s, i) => {
-    const amount = posData?.[i * 3]?.result as bigint | undefined;
-    const priceWad = posData?.[i * 3 + 1]?.result as bigint | undefined;
-    const walletBal = posData?.[i * 3 + 2]?.result as bigint | undefined;
-    const value6 =
-      amount !== undefined && priceWad !== undefined
-        ? (amount * priceWad) / 10n ** 30n
-        : undefined;
-    return { ...s, amount, priceWad, value6, walletBal };
-  });
+    setSnapshot({ positions: emptyPositions() });
+    load();
+    const id = setInterval(load, 6_000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [user]);
 
   return (
     <section id="portfolio" className="border-b border-border">
@@ -108,22 +141,22 @@ export function PortfolioPanel() {
           </div>
         </div>
 
-        {(vaultReadError || positionReadError) && (
+        {readError && (
           <div className="mb-4 border border-amber-400/40 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
             Some contract reads failed. Displayed placeholders are not position values.
           </div>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-px bg-border border border-border">
-          <Stat label="Portfolio value" value={usd(portfolioValue)} accent />
-          <Stat label="Debt" value={usd(debt)} />
+          <Stat label="Portfolio value" value={usd(snapshot.portfolioValue)} accent />
+          <Stat label="Debt" value={usd(snapshot.debt)} />
           <Stat
             label="VaR · 1d 95%"
-            value={usd(var_)}
+            value={usd(snapshot.varUsd)}
             sub="from sigma core (stylus)"
           />
-          <Stat label="Max borrowable" value={usd(maxBorrow)} />
-          <Stat label="Health factor" value={wad(health, 2)} sub="≥ 1 = solvent" />
+          <Stat label="Max borrowable" value={usd(snapshot.maxBorrow)} />
+          <Stat label="Health factor" value={wad(snapshot.health, 2)} sub="≥ 1 = solvent" />
         </div>
 
         <div className="mt-10 panel">
@@ -134,7 +167,7 @@ export function PortfolioPanel() {
             <p className="eyebrow col-span-2 text-right">Price</p>
             <p className="eyebrow col-span-3 text-right">Value</p>
           </div>
-          {positions.map((p) => (
+          {snapshot.positions.map((p) => (
             <div
               key={p.address}
               className="grid grid-cols-2 gap-4 md:grid-cols-12 px-5 py-4 border-b border-border last:border-b-0 items-center"

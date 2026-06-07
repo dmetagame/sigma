@@ -2,6 +2,8 @@
 
 On-chain risk engine in Stylus for tokenized equity collateral on Robinhood Chain.
 
+Live app: https://sigma-two-iota.vercel.app
+
 **Hackathon entry — Arbitrum Open House London Online Buildathon (Jun 14, 2026).**
 
 ## What it does
@@ -29,7 +31,16 @@ All on **Robinhood Chain testnet** (chain ID 46630). Stylus support was verified
 - Asset decimals, volatility, correlations, and global risk parameters are validated.
 - The agent can attempt at most one mutating action per tick and reads policy/cooldown/repayment capacity first.
 - This code has not received an independent professional audit and is not suitable for mainnet funds.
-- The public deployment listed below predates the 2026-06-06 hardening changes and must be redeployed before it is treated as the secured build.
+- The hardened Solidity deployment below was broadcast and seeded on 2026-06-07. The earlier Vault and Strategist addresses are legacy demo contracts and should not be used.
+
+### Hardened deployment
+
+| Contract | Robinhood Chain testnet address |
+|---|---|
+| Sigma Core (Stylus) | `0x3517b74800E6A731656D8cc809d77f730da4d1dA` |
+| Sigma Vault | `0xB2aFb921AA8cE9F53f678782840216661f0d849d` |
+| Sigma Strategist | `0x506aB1734D63748F0aDBCB74C13187E96A0D803a` |
+| Oracle Adapter | `0x148E41B44f53a31D2C040663bEA26CA392aB59bb` |
 
 ## Repository layout
 
@@ -55,6 +66,8 @@ cd ../core   && cargo test --release # 3 passing
 ```bash
 cp .env.example .env.local           # fill deployer, Pilot, and one supported LLM API key
 ./scripts/deploy.sh                  # phase 1 (Stylus) + phase 2 (Solidity)
+./scripts/seed-demo.sh               # fund and create the public testnet demo
+pnpm verify:deployment               # read-only on-chain smoke test
 ```
 
 The deploy script auto-discovers real Robinhood Chain testnet token addresses:
@@ -77,6 +90,8 @@ Get them from `https://faucet.testnet.chain.robinhood.com` (drips ETH + 5 of eac
 - VaR is a model input, not a guarantee against jumps, liquidity gaps, or non-normal returns.
 - The Pilot runs from a CLI; continuous automation and user transaction flows are not yet hosted in the web app.
 - A reproducible Solidity-versus-Stylus gas benchmark is still pending. No gas-reduction multiplier is claimed.
+
+Deployment receipts and demo-state evidence are recorded in [`docs/DEPLOYMENT-2026-06-07.md`](docs/DEPLOYMENT-2026-06-07.md).
 
 ## Robinhood Chain testnet
 

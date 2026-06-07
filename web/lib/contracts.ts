@@ -3,10 +3,10 @@ import type { Address } from "viem";
 export const DEPLOYMENT = {
   chainId: 46630,
   sigmaCore: "0x3517b74800E6A731656D8cc809d77f730da4d1dA" as Address,
-  sigmaVault: "0xF0221bDE2cdf11b9855F91B491597076d27804Cf" as Address,
-  sigmaStrategist: "0xB4821E0617b8e3c8Ddd7359A9f338e7176A0633b" as Address,
-  sigmaStrategistDeploymentBlock: 69_611_116n,
-  oracleAdapter: "0x0d22DdC5d0Da0E4988b04E0647b4643e7BDfFc79" as Address,
+  sigmaVault: "0xB2aFb921AA8cE9F53f678782840216661f0d849d" as Address,
+  sigmaStrategist: "0x506aB1734D63748F0aDBCB74C13187E96A0D803a" as Address,
+  sigmaStrategistDeploymentBlock: 70_791_926n,
+  oracleAdapter: "0x148E41B44f53a31D2C040663bEA26CA392aB59bb" as Address,
   usdc: "0xAc80194dc1aE8eF52df73e7e1864fB3C62290fe0" as Address,
   stocks: [
     { symbol: "TSLA", address: "0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E" as Address },

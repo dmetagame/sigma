@@ -2,15 +2,13 @@
 
 import { useEffect, useState } from "react";
 import {
-  createPublicClient,
-  http,
   decodeEventLog,
   parseAbiItem,
   type Address,
 } from "viem";
-import { robinhoodTestnet } from "@/lib/chain";
 import { DEPLOYMENT, EXPLORER } from "@/lib/contracts";
 import { strategistAbi } from "@/lib/abis";
+import { publicClient } from "@/lib/public-client";
 
 const actionExecutedEvent = parseAbiItem(
   "event ActionExecuted(address indexed user, address indexed agent, uint8 indexed action, bytes data, string rationale)",
@@ -32,21 +30,20 @@ export function PilotLog() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const client = createPublicClient({ chain: robinhoodTestnet, transport: http() });
     let cancelled = false;
     let nextBlock = DEPLOYMENT.sigmaStrategistDeploymentBlock;
     let collected: ActionLog[] = [];
 
     async function load() {
       try {
-        const latest = await client.getBlockNumber();
+        const latest = await publicClient.getBlockNumber();
         const fetched: ActionLog[] = [];
         let cursor = nextBlock;
 
         while (cursor <= latest) {
           const chunkEnd = cursor + 49_999n;
           const toBlock = chunkEnd < latest ? chunkEnd : latest;
-          const raw = await client.getLogs({
+          const raw = await publicClient.getLogs({
             address: DEPLOYMENT.sigmaStrategist,
             fromBlock: cursor,
             toBlock,

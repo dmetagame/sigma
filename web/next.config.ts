@@ -4,7 +4,7 @@ import path from "node:path";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   turbopack: {
-    root: path.resolve(__dirname, ".."),
+    root: process.env.VERCEL ? __dirname : path.resolve(__dirname, ".."),
   },
 };
 

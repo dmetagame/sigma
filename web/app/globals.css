@@ -69,13 +69,13 @@
   samp,
   .mono,
   [data-mono] {
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum", "zero";
   }
 
   .eyebrow {
-    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-family: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", monospace;
     font-size: 0.75rem;
     letter-spacing: 0.18em;
     text-transform: uppercase;
