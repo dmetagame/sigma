@@ -32,6 +32,7 @@ All on **Robinhood Chain testnet** (chain ID 46630). Stylus support was verified
 - The agent can attempt at most one mutating action per tick and reads policy/cooldown/repayment capacity first.
 - The oracle enforces timestamp monotonicity, freshness, sequential-deviation limits, and owner-controlled emergency pause.
 - GitHub Actions hosts both the 30-minute oracle updater and six-hour policy-constrained Pilot tick.
+- Dry and live workflow paths were successfully exercised on 2026-06-07; receipt links are recorded in the deployment evidence.
 - This code has not received an independent professional audit and is not suitable for mainnet funds.
 - The hardened Solidity deployment below was broadcast and seeded on 2026-06-07. The earlier Vault and Strategist addresses are legacy demo contracts and should not be used.
 
