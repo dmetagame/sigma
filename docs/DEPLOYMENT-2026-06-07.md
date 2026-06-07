@@ -6,8 +6,8 @@ Production app: https://sigma-two-iota.vercel.app
 
 Vercel production deployment:
 
-- Deployment ID: `dpl_EQJgaraq7tQk597G7czB4FwvUqSk`
-- Immutable URL: https://sigma-ck43bxqas-dmetagames-projects.vercel.app
+- Deployment ID: `dpl_9jW7y388Lsr43TdjwBNLAUELRMg5`
+- Immutable URL: https://sigma-lpm9ln8vx-dmetagames-projects.vercel.app
 - Status: `READY`
 
 Post-deployment Lighthouse results (2026-06-07):
@@ -51,17 +51,24 @@ but it is not an on-chain decentralized oracle network.
 - Pilot: `0x2a73462D71b9D61425997a6F14f63c31c3440f3e`
 - Collateral: 1 TSLA at the cross-checked price of 390.918750 USDC
 - Portfolio value: 390.918750 USDC
-- Debt: 50 USDC
+- Debt: 150 USDC
 - One-day 95% VaR: 18.229075 USDC
 - Max borrowable: 312.735000 USDC, constrained by the 80% base-LTV ceiling
-- Health factor: 6.2547
-- Remaining Vault liquidity: 150 USDC
+- Health factor: 2.0849
+- Remaining Vault liquidity: 50 USDC
 
 Pilot Borrow transaction:
 `0xaf406078fc1106c456e43e62d62bc6c3572319c2f2e6c27f8ad630d644882d15`
 
 The transaction emits `ActionExecuted` with the rationale:
 `Demo borrow: 50 USDC after portfolio VaR and the 80% base-LTV check`.
+
+Hosted Pilot verification run:
+https://github.com/dmetagame/sigma/actions/runs/27100625520
+
+The scheduled Pilot path executed one policy-bounded 100 USDC borrow, bringing
+total debt to the configured 150 USDC cap:
+`0x5dd8e279740b808200944e1aa9bebc5bbb887e7cf4fd8ab66ab069a06c6933d8`.
 
 ## Gas benchmark
 
@@ -85,6 +92,17 @@ overhead.
 - `.github/workflows/pilot.yml`: runs one policy-constrained Pilot tick every six hours.
 - Scheduled live Pilot execution is controlled by the `PILOT_LIVE_AUTOMATION` repository variable.
 - All automation keys are testnet-only GitHub Actions secrets.
+
+Verified workflow runs:
+
+- Oracle dry run: https://github.com/dmetagame/sigma/actions/runs/27100588636
+- Pilot dry run: https://github.com/dmetagame/sigma/actions/runs/27100593043
+- Oracle live path: https://github.com/dmetagame/sigma/actions/runs/27100621036
+- Pilot live path: https://github.com/dmetagame/sigma/actions/runs/27100625520
+
+The live oracle path completed without a transaction because all five Pyth
+timestamps matched the already-published weekend observations. This confirms
+the idempotent no-update path rather than manufacturing a new timestamp.
 
 ## Legacy deployment
 
