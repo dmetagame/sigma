@@ -31,7 +31,7 @@ jobs:
       ORACLE_MAX_SOURCE_AGE_SEC: "345600"
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 10.30.1
       - uses: actions/setup-node@v4
