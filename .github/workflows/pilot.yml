@@ -1,0 +1,59 @@
+name: Run Sigma Pilot
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      execute:
+        description: Permit one guarded on-chain action
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sigma-pilot
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RH_TESTNET_RPC: https://rpc.testnet.chain.robinhood.com
+      RH_TESTNET_CHAIN_ID: "46630"
+      SIGMA_CORE_ADDR: ${{ vars.SIGMA_CORE_ADDR }}
+      SIGMA_VAULT_ADDR: ${{ vars.SIGMA_VAULT_ADDR }}
+      SIGMA_STRATEGIST_ADDR: ${{ vars.SIGMA_STRATEGIST_ADDR }}
+      USDC_ADDR: ${{ vars.USDC_ADDR }}
+      PILOT_USER: ${{ vars.PILOT_USER }}
+      PILOT_PRIVATE_KEY: ${{ secrets.PILOT_PRIVATE_KEY }}
+      GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run one policy-constrained decision tick
+        shell: bash
+        run: |
+          execute="false"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            execute="${{ inputs.execute }}"
+          elif [ "${{ vars.PILOT_LIVE_AUTOMATION }}" = "true" ]; then
+            execute="true"
+          fi
+
+          if [ "$execute" = "true" ]; then
+            pnpm --filter @sigma/agent exec tsx src/cli.ts tick --user "$PILOT_USER"
+          else
+            pnpm --filter @sigma/agent exec tsx src/cli.ts tick --user "$PILOT_USER" --dry
+          fi

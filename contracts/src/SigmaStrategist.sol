@@ -4,6 +4,7 @@ pragma solidity ^0.8.27;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {SigmaVault} from "./SigmaVault.sol";
 
@@ -101,6 +102,8 @@ contract SigmaStrategist is ReentrancyGuard {
         if (msg.sender != p.agent) revert NotAgent();
         uint256 last = lastActionAt[user];
         if (last != 0 && block.timestamp < last + p.cooldownSec) revert Cooldown();
+        // Effects before interactions. Any later revert rolls this write back.
+        lastActionAt[user] = block.timestamp;
 
         if (action == ActionType.Borrow) {
             uint256 amount = abi.decode(data, (uint256));
@@ -112,6 +115,8 @@ contract SigmaStrategist is ReentrancyGuard {
             uint256 owed = vault.debt(user);
             uint256 pay = amount > owed ? owed : amount;
             if (pay == 0) revert NothingToRepay();
+            // The user explicitly granted this contract allowance and selected
+            // p.agent in their policy; arbitrary callers cannot reach this path.
             usdc.safeTransferFrom(user, address(this), pay);
             usdc.forceApprove(address(vault), pay);
             vault.repayFor(user, pay);
@@ -128,7 +133,6 @@ contract SigmaStrategist is ReentrancyGuard {
         }
         _enforceConcentration(user, p.maxStockShare);
 
-        lastActionAt[user] = block.timestamp;
         emit ActionExecuted(user, msg.sender, action, data, rationale);
     }
 
@@ -142,8 +146,8 @@ contract SigmaStrategist is ReentrancyGuard {
         for (uint256 i = 0; i < stocks.length; i++) {
             uint256 amt = vault.collateral(user, stocks[i]);
             if (amt == 0) continue;
-            uint256 v6 = (amt * vault.oracle().getPrice(stocks[i])) / 1e30;
-            uint256 share = (v6 * 1e18) / pv;
+            uint256 v6 = Math.mulDiv(amt, vault.oracle().getPrice(stocks[i]), 1e30);
+            uint256 share = Math.mulDiv(v6, 1e18, pv);
             if (share > maxShare) revert ConcentrationExceeded();
         }
     }

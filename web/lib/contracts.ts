@@ -6,7 +6,8 @@ export const DEPLOYMENT = {
   sigmaVault: "0xB2aFb921AA8cE9F53f678782840216661f0d849d" as Address,
   sigmaStrategist: "0x506aB1734D63748F0aDBCB74C13187E96A0D803a" as Address,
   sigmaStrategistDeploymentBlock: 70_791_926n,
-  oracleAdapter: "0x148E41B44f53a31D2C040663bEA26CA392aB59bb" as Address,
+  oracleAdapter: "0x49E038450866157b3B0f790992690EcE842602E0" as Address,
+  solidityBenchmark: "0x3f64d310B88f8c89aFd70ccCD33094DF7e7c3a91" as Address,
   usdc: "0xAc80194dc1aE8eF52df73e7e1864fB3C62290fe0" as Address,
   stocks: [
     { symbol: "TSLA", address: "0xC9f9c86933092BbbfFF3CCb4b105A4A94bf3Bd4E" as Address },

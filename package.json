@@ -10,7 +10,8 @@
     "build": "pnpm -r build",
     "contracts:build": "pnpm --filter @sigma/contracts build",
     "core:check": "cd core && cargo stylus check --endpoint https://rpc.testnet.chain.robinhood.com",
-    "verify:deployment": "./scripts/verify-deployment.sh"
+    "verify:deployment": "./scripts/verify-deployment.sh",
+    "benchmark:gas": "./scripts/benchmark-gas.sh"
   },
   "pnpm": {
     "overrides": {

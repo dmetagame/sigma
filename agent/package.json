@@ -6,12 +6,12 @@
   "scripts": {
     "build": "tsc",
     "tick": "tsx src/cli.ts tick",
-    "loop": "tsx src/cli.ts loop"
+    "loop": "tsx src/cli.ts loop",
+    "oracle:update": "tsx src/oracle-updater.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.0",
-    "@ai-sdk/google": "^2.0.0",
-    "ai": "^5.0.0",
+    "@ai-sdk/google": "^3.0.80",
+    "ai": "^6.0.197",
     "dotenv": "^17.0.0",
     "viem": "^2.31.0",
     "zod": "^3.25.0"

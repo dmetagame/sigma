@@ -170,11 +170,11 @@ contract SigmaVault is ReentrancyGuard, Ownable {
 
     // -- Executor delegation -------------------------------------------------
 
-    /// @notice Designate `_executor` as authorized to act on msg.sender's position
+    /// @notice Designate `newExecutor` as authorized to act on msg.sender's position
     ///         via `*For` variants. Pass `address(0)` to revoke.
-    function setExecutor(address _executor) external {
-        executor[msg.sender] = _executor;
-        emit ExecutorSet(msg.sender, _executor);
+    function setExecutor(address newExecutor) external {
+        executor[msg.sender] = newExecutor;
+        emit ExecutorSet(msg.sender, newExecutor);
     }
 
     modifier asUser(address user) {
