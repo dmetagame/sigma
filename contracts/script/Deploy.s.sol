@@ -59,9 +59,9 @@ contract Deploy is Script {
 
         StockSpec[5] memory stocks = [
             StockSpec(tsla, "TSLA", 0.45e18, 280e18),
-            StockSpec(amd, "AMD", 0.50e18, 165e18),
+            StockSpec(amd, "AMD", 0.5e18, 165e18),
             StockSpec(amzn, "AMZN", 0.32e18, 195e18),
-            StockSpec(nflx, "NFLX", 0.40e18, 660e18),
+            StockSpec(nflx, "NFLX", 0.4e18, 660e18),
             StockSpec(pltr, "PLTR", 0.65e18, 145e18)
         ];
 
@@ -110,15 +110,15 @@ contract Deploy is Script {
         // Hand-tuned tech-basket correlations. Numbers below are illustrative
         // for the demo; replace with rolling-window estimates pre-mainnet.
         sv.setCorrelation(s[0].addr, s[1].addr, 0.55e18); // TSLA-AMD
-        sv.setCorrelation(s[0].addr, s[2].addr, 0.40e18); // TSLA-AMZN
+        sv.setCorrelation(s[0].addr, s[2].addr, 0.4e18); // TSLA-AMZN
         sv.setCorrelation(s[0].addr, s[3].addr, 0.35e18); // TSLA-NFLX
-        sv.setCorrelation(s[0].addr, s[4].addr, 0.60e18); // TSLA-PLTR
-        sv.setCorrelation(s[1].addr, s[2].addr, 0.50e18); // AMD-AMZN
+        sv.setCorrelation(s[0].addr, s[4].addr, 0.6e18); // TSLA-PLTR
+        sv.setCorrelation(s[1].addr, s[2].addr, 0.5e18); // AMD-AMZN
         sv.setCorrelation(s[1].addr, s[3].addr, 0.45e18); // AMD-NFLX
         sv.setCorrelation(s[1].addr, s[4].addr, 0.55e18); // AMD-PLTR
         sv.setCorrelation(s[2].addr, s[3].addr, 0.55e18); // AMZN-NFLX
-        sv.setCorrelation(s[2].addr, s[4].addr, 0.40e18); // AMZN-PLTR
-        sv.setCorrelation(s[3].addr, s[4].addr, 0.40e18); // NFLX-PLTR
+        sv.setCorrelation(s[2].addr, s[4].addr, 0.4e18); // AMZN-PLTR
+        sv.setCorrelation(s[3].addr, s[4].addr, 0.4e18); // NFLX-PLTR
     }
 
     function _envOr(string memory key, address fallback_) internal view returns (address) {

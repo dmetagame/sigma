@@ -35,8 +35,8 @@ contract SigmaVaultTest is Test {
         vault = new SigmaVault(IERC20(address(usdc)), ISigmaCore(address(core)), IOracleAdapter(address(oracle)), owner);
 
         // 20% and 30% annualized vol respectively.
-        vault.addStock(address(aapl), 0.20e18);
-        vault.addStock(address(tsla), 0.30e18);
+        vault.addStock(address(aapl), 0.2e18);
+        vault.addStock(address(tsla), 0.3e18);
         vault.setCorrelation(address(aapl), address(tsla), 0.5e18);
 
         // Prices: $200 AAPL, $250 TSLA (WAD-scaled USDC per token).
@@ -76,8 +76,8 @@ contract SigmaVaultTest is Test {
         vm.prank(owner);
         core.setVar(1_000e6);
 
-        // maxBorrowable = $20k - $2k = $18k.
-        assertEq(vault.maxBorrowable(alice), 18_000e6);
+        // VaR allows $18k, but the independent 80% base-LTV cap limits this to $16k.
+        assertEq(vault.maxBorrowable(alice), 16_000e6);
 
         vm.prank(alice);
         vault.borrow(15_000e6);
@@ -148,5 +148,61 @@ contract SigmaVaultTest is Test {
 
         assertEq(vault.debt(alice), 10_000e6);
         assertEq(aapl.balanceOf(bob), 25e18);
+    }
+
+    function test_liquidation_cannot_seize_collateral_for_zero_repayment() public {
+        _makeAliceUnhealthy();
+
+        vm.prank(bob);
+        vm.expectRevert(SigmaVault.ZeroAmount.selector);
+        vault.liquidate(alice, address(aapl), 25e18, 0);
+    }
+
+    function test_liquidation_rejects_value_above_bonus() public {
+        _makeAliceUnhealthy();
+        vm.prank(owner);
+        usdc.mint(bob, 5_000e6);
+
+        vm.startPrank(bob);
+        usdc.approve(address(vault), type(uint256).max);
+        vm.expectRevert(SigmaVault.ExcessiveSeizure.selector);
+        vault.liquidate(alice, address(aapl), 30e18, 5_000e6);
+        vm.stopPrank();
+    }
+
+    function test_liquidation_caps_repayment_at_close_factor() public {
+        _makeAliceUnhealthy();
+        vm.prank(owner);
+        usdc.mint(bob, 10_000e6);
+
+        vm.startPrank(bob);
+        usdc.approve(address(vault), type(uint256).max);
+        vault.liquidate(alice, address(aapl), 37.5e18, 10_000e6);
+        vm.stopPrank();
+
+        assertEq(vault.debt(alice), 7_500e6);
+        assertEq(usdc.balanceOf(bob), 2_500e6);
+    }
+
+    function test_invalid_correlation_reverts() public {
+        vm.prank(owner);
+        vm.expectRevert(SigmaVault.InvalidRiskParameter.selector);
+        vault.setCorrelation(address(aapl), address(tsla), 1.01e18);
+    }
+
+    function _makeAliceUnhealthy() internal {
+        _mint(aapl, alice, 100e18);
+        vm.startPrank(alice);
+        aapl.approve(address(vault), type(uint256).max);
+        vault.deposit(address(aapl), 100e18);
+        vm.stopPrank();
+
+        vm.prank(owner);
+        core.setVar(1_000e6);
+        vm.prank(alice);
+        vault.borrow(15_000e6);
+
+        vm.prank(owner);
+        core.setVar(8_000e6);
     }
 }

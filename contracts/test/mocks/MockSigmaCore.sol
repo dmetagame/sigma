@@ -12,14 +12,11 @@ contract MockSigmaCore is ISigmaCore {
         fixedVar = v;
     }
 
-    function computePortfolioVar(
-        uint256[] calldata,
-        uint256[] calldata,
-        int256[] calldata,
-        uint256,
-        uint256,
-        uint256
-    ) external view returns (uint256) {
+    function computePortfolioVar(uint256[] calldata, uint256[] calldata, int256[] calldata, uint256, uint256, uint256)
+        external
+        view
+        returns (uint256)
+    {
         return fixedVar;
     }
 }

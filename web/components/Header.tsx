@@ -1,13 +1,12 @@
 "use client";
 
-import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { injected } from "wagmi/connectors";
 import { shortAddr } from "@/lib/format";
+import { robinhoodTestnet } from "@/lib/chain";
+import { useWallet } from "@/lib/wallet";
 
 export function Header() {
-  const { address, isConnected, chainId } = useAccount();
-  const { connect } = useConnect();
-  const { disconnect } = useDisconnect();
+  const { address, isConnected, chainId, connect, disconnect, switchToRobinhood } = useWallet();
+  const wrongChain = isConnected && chainId !== robinhoodTestnet.id;
 
   return (
     <header className="border-b border-border">
@@ -34,12 +33,20 @@ export function Header() {
         <div className="flex items-center gap-3">
           {isConnected ? (
             <>
+              {wrongChain && (
+                <button
+                  onClick={() => void switchToRobinhood().catch(() => undefined)}
+                  className="font-mono text-xs border border-amber-400 text-amber-300 px-2 py-1"
+                >
+                  switch network
+                </button>
+              )}
               <span className="font-mono text-xs text-muted hidden sm:inline">
                 chain {chainId}
               </span>
               <span className="font-mono text-sm">{shortAddr(address)}</span>
               <button
-                onClick={() => disconnect()}
+                onClick={disconnect}
                 className="font-mono text-xs text-muted hover:text-text transition-colors"
               >
                 disconnect
@@ -47,7 +54,7 @@ export function Header() {
             </>
           ) : (
             <button
-              onClick={() => connect({ connector: injected() })}
+              onClick={() => void connect().catch(() => undefined)}
               className="font-mono text-sm border border-accent text-accent hover:bg-accent-dim transition-colors px-3 py-1.5"
             >
               connect wallet

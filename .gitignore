@@ -28,6 +28,7 @@ Cargo.lock.bak
 contracts/out/
 contracts/cache/
 contracts/broadcast/*/dryrun/
+contracts/broadcast/**/run-[0-9]*.json
 
 # OS
 .DS_Store

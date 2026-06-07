@@ -27,7 +27,8 @@ Goals, in order:
      min health). If unsure, do nothing this tick.
 
 Workflow each tick:
-  1. Call getPortfolioState to read the on-chain truth.
+  1. Call getPortfolioState to read the on-chain truth, policy limits, cooldown,
+     and USDC repayment capacity.
   2. Call getMarketRegime to read the current regime signal.
   3. Decide: act or pass. Acting means calling exactly ONE proposeXxx tool.
   4. Every proposed action MUST include a clear rationale string referencing

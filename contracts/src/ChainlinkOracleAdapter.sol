@@ -21,12 +21,15 @@ interface AggregatorV3Interface {
 contract ChainlinkOracleAdapter is IOracleAdapter, Ownable {
     mapping(address => AggregatorV3Interface) public feedOf;
     mapping(address => uint256) public fallbackWad;
+    uint256 public maxStaleness = 1 days;
 
     event FeedSet(address indexed stock, address feed);
     event FallbackPriceSet(address indexed stock, uint256 priceWad);
+    event MaxStalenessSet(uint256 maxStaleness);
 
     error StalePrice();
     error NoPrice();
+    error InvalidParameter();
 
     constructor(address initialOwner) Ownable(initialOwner) {}
 
@@ -40,15 +43,23 @@ contract ChainlinkOracleAdapter is IOracleAdapter, Ownable {
         emit FallbackPriceSet(stock, priceWad);
     }
 
+    function setMaxStaleness(uint256 newMaxStaleness) external onlyOwner {
+        if (newMaxStaleness == 0 || newMaxStaleness > 7 days) revert InvalidParameter();
+        maxStaleness = newMaxStaleness;
+        emit MaxStalenessSet(newMaxStaleness);
+    }
+
     function getPrice(address stock) external view returns (uint256) {
         AggregatorV3Interface feed = feedOf[stock];
         if (address(feed) != address(0)) {
-            (, int256 answer,, uint256 updatedAt,) = feed.latestRoundData();
+            (uint80 roundId, int256 answer,, uint256 updatedAt, uint80 answeredInRound) = feed.latestRoundData();
             if (answer <= 0) revert NoPrice();
-            // Skip aggressive staleness checks for testnet; production should
-            // enforce updatedAt >= block.timestamp - maxStaleness.
-            updatedAt; // silence unused-variable lint
+            if (
+                updatedAt == 0 || updatedAt > block.timestamp || block.timestamp - updatedAt > maxStaleness
+                    || answeredInRound < roundId
+            ) revert StalePrice();
             uint8 dec = feed.decimals();
+            if (dec > 36) revert InvalidParameter();
             uint256 raw = uint256(answer);
             if (dec < 18) return raw * (10 ** (18 - dec));
             if (dec > 18) return raw / (10 ** (dec - 18));
