@@ -6,8 +6,8 @@ Production app: https://sigma-two-iota.vercel.app
 
 Vercel production deployment:
 
-- Deployment ID: `dpl_9jW7y388Lsr43TdjwBNLAUELRMg5`
-- Immutable URL: https://sigma-lpm9ln8vx-dmetagames-projects.vercel.app
+- Deployment ID: `dpl_7TwxaGM9aQzF16cQG3HfgUvJMv63`
+- Immutable URL: https://sigma-l42mzut39-dmetagames-projects.vercel.app
 - Status: `READY`
 
 Post-deployment Lighthouse results (2026-06-07):
@@ -105,6 +105,11 @@ Verified workflow runs:
 - Pilot dry run: https://github.com/dmetagame/sigma/actions/runs/27100593043
 - Oracle live path: https://github.com/dmetagame/sigma/actions/runs/27100621036
 - Pilot live path: https://github.com/dmetagame/sigma/actions/runs/27100625520
+- Defensive guardian after Strategist migration: https://github.com/dmetagame/sigma/actions/runs/27122811322
+
+The defensive guardian verification completed successfully on 2026-06-08
+against the replacement Strategist. The position was healthy with zero debt,
+so the guardian correctly submitted no transaction.
 
 The live oracle path completed without a transaction because all five Pyth
 timestamps matched the already-published weekend observations. This confirms
