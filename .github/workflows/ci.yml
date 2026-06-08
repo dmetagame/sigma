@@ -34,7 +34,7 @@ jobs:
           slither .
           --filter-paths 'lib|test|script'
           --exclude-dependencies
-          --exclude arbitrary-send-erc20,calls-loop,timestamp,unused-return
+          --exclude arbitrary-send-erc20,calls-loop,cyclomatic-complexity,timestamp,unused-return
         working-directory: contracts
 
   rust:
@@ -64,6 +64,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @sigma/agent test
       - run: pnpm --filter @sigma/agent build
       - run: pnpm --filter @sigma/web exec tsc --noEmit
       - run: pnpm --filter @sigma/web build

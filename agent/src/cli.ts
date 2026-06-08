@@ -1,11 +1,12 @@
 import { type Address } from "viem";
 import { runTick } from "./agent.js";
 import { pilotAddress } from "./client.js";
+import { runGuardian } from "./guardian.js";
 
-function parseArgs(): { mode: "tick" | "loop"; user: Address; dryRun: boolean; intervalMs: number } {
+function parseArgs(): { mode: "tick" | "loop" | "guard"; user: Address; dryRun: boolean; intervalMs: number } {
   const [mode, ...rest] = process.argv.slice(2);
-  if (mode !== "tick" && mode !== "loop") {
-    console.error("usage: tsx src/cli.ts <tick|loop> --user 0x... [--dry] [--interval=30000]");
+  if (mode !== "tick" && mode !== "loop" && mode !== "guard") {
+    console.error("usage: tsx src/cli.ts <tick|loop|guard> --user 0x... [--dry] [--interval=30000]");
     process.exit(1);
   }
   let user: Address | null = null;
@@ -27,6 +28,11 @@ function parseArgs(): { mode: "tick" | "loop"; user: Address; dryRun: boolean; i
 async function main() {
   const { mode, user, dryRun, intervalMs } = parseArgs();
   console.log(`Sigma Pilot — eoa=${pilotAddress()} user=${user} dry=${dryRun}`);
+
+  if (mode === "guard") {
+    console.log(await runGuardian(user, dryRun));
+    return;
+  }
 
   if (mode === "tick") {
     const out = await runTick({ user, dryRun });

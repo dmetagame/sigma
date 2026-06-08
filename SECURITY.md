@@ -28,5 +28,7 @@ Strategist, and Oracle deployments are retained only as historical evidence.
   on-chain decentralized oracle network.
 - Each user explicitly selects one Pilot EOA and immutable-on-execution policy
   bounds in the Strategist.
+- Scheduled Pilot automation is repay-only and deterministic. Borrow and
+  withdrawal tools are available only during manually dispatched demo ticks.
 - GitHub Actions and Vercel hold testnet-only keys. Mainnet operation requires
   hardware-backed signing, multisig ownership, timelocks, and monitoring.

@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
+    "test": "tsx --test src/*.test.ts",
     "tick": "tsx src/cli.ts tick",
+    "guard": "tsx src/cli.ts guard",
     "loop": "tsx src/cli.ts loop",
     "oracle:update": "tsx src/oracle-updater.ts"
   },

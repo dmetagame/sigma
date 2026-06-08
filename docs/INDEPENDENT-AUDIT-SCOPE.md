@@ -11,6 +11,8 @@ handoff brief for an external Solidity and Stylus reviewer, not an audit report.
 - `contracts/src/SoliditySigmaCore.sol`
 - `core/src/`
 - `agent/src/oracle-updater.ts`
+- `agent/src/guardian.ts`
+- `agent/src/guardian-plan.ts`
 - `agent/src/tools.ts`
 - Deployment and activation scripts under `contracts/script/`
 
