@@ -5,11 +5,15 @@ on:
     - cron: "17 */6 * * *"
   workflow_dispatch:
     inputs:
-      execute:
-        description: Permit one full demo-agent action (manual runs only)
+      mode:
+        description: Select the Pilot mode
         required: true
-        default: false
-        type: boolean
+        default: guardian
+        type: choice
+        options:
+          - guardian
+          - dry-run
+          - execute
 
 permissions:
   contents: read
@@ -45,9 +49,9 @@ jobs:
       - name: Run scheduled guardian or manual demo-agent tick
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" = "schedule" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.mode }}" = "guardian" ]; then
             pnpm --filter @sigma/agent guard -- --user "$PILOT_USER"
-          elif [ "${{ inputs.execute }}" = "true" ]; then
+          elif [ "${{ inputs.mode }}" = "execute" ]; then
             pnpm --filter @sigma/agent exec tsx src/cli.ts tick --user "$PILOT_USER"
           else
             pnpm --filter @sigma/agent exec tsx src/cli.ts tick --user "$PILOT_USER" --dry
