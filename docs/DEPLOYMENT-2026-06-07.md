@@ -6,8 +6,8 @@ Production app: https://sigma-two-iota.vercel.app
 
 Vercel production deployment:
 
-- Deployment ID: `dpl_7TwxaGM9aQzF16cQG3HfgUvJMv63`
-- Immutable URL: https://sigma-l42mzut39-dmetagames-projects.vercel.app
+- Deployment ID: `dpl_2VopQxtx6UHAGkShDBUbjLcrtc9y`
+- Immutable URL: https://sigma-3eyi2glsz-dmetagames-projects.vercel.app
 - Status: `READY`
 
 Post-deployment Lighthouse results (2026-06-07):
@@ -56,6 +56,21 @@ but it is not an on-chain decentralized oracle network.
 - Max borrowable: 312.735000 USDC, constrained by the 80% base-LTV ceiling
 - Health factor: unbounded (no debt)
 - Remaining Vault liquidity: 200 USDC
+
+## Wallet operator interface
+
+The production application now exposes wallet-driven deposit, withdrawal,
+borrow, repayment, and Pilot policy controls. Direct token transfers use exact
+approvals. Pilot setup configures a repayment allowance capped at the larger
+of current debt or the policy borrow ceiling, authorizes the Strategist as the
+Vault executor, and activates the policy only after those supporting
+permissions are confirmed. Revocation deactivates the policy, clears executor
+access, and resets the repayment allowance to zero.
+
+Production verification on 2026-06-08 covered disconnected and injected-wallet
+browser states plus the full deployment smoke test. The connected demo wallet
+showed the live 150 USDC borrow cap, 100% concentration limit, 1.2 minimum
+health factor, and five-second cooldown.
 
 Pilot Borrow transaction:
 `0xaf406078fc1106c456e43e62d62bc6c3572319c2f2e6c27f8ad630d644882d15`
