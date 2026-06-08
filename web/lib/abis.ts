@@ -62,6 +62,47 @@ export const vaultAbi = [
     inputs: [{ type: "address" }],
     outputs: [{ type: "address" }],
   },
+  {
+    type: "function",
+    name: "setExecutor",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "newExecutor", type: "address" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "deposit",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "stock", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "withdraw",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "stock", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "borrow",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "amount", type: "uint256" }],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "repay",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "amount", type: "uint256" }],
+    outputs: [],
+  },
 ] as const;
 
 export const oracleAbi = [
@@ -88,6 +129,33 @@ export const strategistAbi = [
       { name: "cooldownSec", type: "uint256" },
       { name: "active", type: "bool" },
     ],
+  },
+  {
+    type: "function",
+    name: "register",
+    stateMutability: "nonpayable",
+    inputs: [
+      {
+        name: "p",
+        type: "tuple",
+        components: [
+          { name: "agent", type: "address" },
+          { name: "maxBorrow6", type: "uint256" },
+          { name: "maxStockShare", type: "uint256" },
+          { name: "minHealthFactor", type: "uint256" },
+          { name: "cooldownSec", type: "uint256" },
+          { name: "active", type: "bool" },
+        ],
+      },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "deactivate",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
   },
   {
     type: "event",
@@ -123,6 +191,26 @@ export const erc20Abi = [
     stateMutability: "view",
     inputs: [{ type: "address" }],
     outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "allowance",
+    stateMutability: "view",
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+    ],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "approve",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ type: "bool" }],
   },
 ] as const;
 

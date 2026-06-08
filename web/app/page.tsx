@@ -3,6 +3,7 @@ import { Hero } from "@/components/Hero";
 import { PortfolioPanel } from "@/components/PortfolioPanel";
 import { StylusShowcase } from "@/components/StylusShowcase";
 import { PilotLog } from "@/components/PilotLog";
+import { OperatorPanel } from "@/components/OperatorPanel";
 
 export default function Page() {
   return (
@@ -11,6 +12,7 @@ export default function Page() {
       <main>
         <Hero />
         <PortfolioPanel />
+        <OperatorPanel />
         <StylusShowcase />
         <PilotLog />
       </main>

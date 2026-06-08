@@ -20,6 +20,9 @@ export function Header() {
           <a href="#portfolio" className="hover:text-text transition-colors">
             Portfolio
           </a>
+          <a href="#operate" className="hover:text-text transition-colors">
+            Operate
+          </a>
           <a href="#risk" className="hover:text-text transition-colors">
             Risk
           </a>

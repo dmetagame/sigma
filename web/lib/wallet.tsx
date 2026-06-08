@@ -9,7 +9,7 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
-import { getAddress, type Address } from "viem";
+import { getAddress, type Address, type Hash, type Hex } from "viem";
 import { robinhoodTestnet } from "./chain";
 
 interface EthereumProvider {
@@ -31,6 +31,7 @@ interface WalletState {
   connect(): Promise<void>;
   disconnect(): void;
   switchToRobinhood(): Promise<void>;
+  sendTransaction(transaction: { to: Address; data: Hex }): Promise<Hash>;
 }
 
 const WalletContext = createContext<WalletState | null>(null);
@@ -109,6 +110,23 @@ export function WalletProvider({ children }: PropsWithChildren) {
     setChainId(robinhoodTestnet.id);
   }, []);
 
+  const sendTransaction = useCallback(
+    async ({ to, data }: { to: Address; data: Hex }) => {
+      const provider = window.ethereum;
+      if (!provider || !address) throw new Error("Connect a wallet first");
+      if (chainId !== robinhoodTestnet.id) {
+        throw new Error(`Switch to ${robinhoodTestnet.name} before submitting`);
+      }
+      const hash = await provider.request({
+        method: "eth_sendTransaction",
+        params: [{ from: address, to, data }],
+      });
+      if (typeof hash !== "string") throw new Error("Wallet returned an invalid transaction hash");
+      return hash as Hash;
+    },
+    [address, chainId],
+  );
+
   const value = useMemo(
     () => ({
       address,
@@ -117,8 +135,9 @@ export function WalletProvider({ children }: PropsWithChildren) {
       connect,
       disconnect,
       switchToRobinhood,
+      sendTransaction,
     }),
-    [address, chainId, connect, disconnect, switchToRobinhood],
+    [address, chainId, connect, disconnect, sendTransaction, switchToRobinhood],
   );
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
