@@ -92,7 +92,7 @@ Get them from `https://faucet.testnet.chain.robinhood.com` (drips ETH + 5 of eac
 - The vault is a funded credit demo, not a complete lending market: there are no lender shares, interest accrual, reserves, or bad-debt socialization.
 - The testnet oracle reporter is centralized even though it cross-checks two independent sources. Production requires on-chain verified feeds, monitoring, and multisig/timelock governance.
 - VaR is a model input, not a guarantee against jumps, liquidity gaps, or non-normal returns.
-- The defensive repayment guardian is scheduled in GitHub Actions; leverage-changing demo-agent actions require manual dispatch. User policy registration and transaction flows are not yet exposed in the web app.
+- The web app exposes wallet-driven deposit, withdrawal, borrow, repayment, and Pilot policy controls. The defensive repayment guardian is scheduled in GitHub Actions; leverage-changing demo-agent actions still require manual dispatch.
 - At block `70915096`, the deployed five-asset benchmark measured 122,318 gas for Stylus and 128,960 for Solidity, a 5.15% saving. It is one workload, not a universal multiplier.
 
 Deployment receipts and demo-state evidence are recorded in [`docs/DEPLOYMENT-2026-06-07.md`](docs/DEPLOYMENT-2026-06-07.md).
