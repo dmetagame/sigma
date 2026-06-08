@@ -101,7 +101,9 @@ contract SigmaStrategist is ReentrancyGuard {
         if (!p.active) revert PolicyInactive();
         if (msg.sender != p.agent) revert NotAgent();
         uint256 last = lastActionAt[user];
-        if (last != 0 && block.timestamp < last + p.cooldownSec) revert Cooldown();
+        // Never let a cooldown prevent a risk-reducing repayment. Borrow and
+        // withdrawal remain rate-limited because they can increase risk.
+        if (action != ActionType.Repay && last != 0 && block.timestamp < last + p.cooldownSec) revert Cooldown();
         // Effects before interactions. Any later revert rolls this write back.
         lastActionAt[user] = block.timestamp;
 
@@ -127,11 +129,14 @@ contract SigmaStrategist is ReentrancyGuard {
             revert UnsupportedAction();
         }
 
-        // Post-condition checks based on policy.
-        if (vault.debt(user) > 0 && vault.health(user) < p.minHealthFactor) {
-            revert HealthBelowMin();
+        // Repayment strictly reduces debt without changing collateral, so
+        // pre-existing health or concentration violations must not block it.
+        if (action != ActionType.Repay) {
+            if (vault.debt(user) > 0 && vault.health(user) < p.minHealthFactor) {
+                revert HealthBelowMin();
+            }
+            _enforceConcentration(user, p.maxStockShare);
         }
-        _enforceConcentration(user, p.maxStockShare);
 
         emit ActionExecuted(user, msg.sender, action, data, rationale);
     }

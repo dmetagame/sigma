@@ -31,55 +31,63 @@ export function PilotLog() {
 
   useEffect(() => {
     let cancelled = false;
-    let nextBlock = DEPLOYMENT.sigmaStrategistDeploymentBlock;
+    const sources: Array<{
+      address: Address;
+      deploymentBlock: bigint;
+      nextBlock: bigint;
+    }> = DEPLOYMENT.strategistHistory.map((strategist) => ({
+      ...strategist,
+      nextBlock: strategist.deploymentBlock,
+    }));
     let collected: ActionLog[] = [];
 
     async function load() {
       try {
         const latest = await publicClient.getBlockNumber();
         const fetched: ActionLog[] = [];
-        let cursor = nextBlock;
-
-        while (cursor <= latest) {
-          const chunkEnd = cursor + 49_999n;
-          const toBlock = chunkEnd < latest ? chunkEnd : latest;
-          const raw = await publicClient.getLogs({
-            address: DEPLOYMENT.sigmaStrategist,
-            fromBlock: cursor,
-            toBlock,
-            event: actionExecutedEvent,
-          });
-          for (const log of raw) {
-            try {
-              const decoded = decodeEventLog({
-                abi: strategistAbi,
-                data: log.data,
-                topics: log.topics,
-              });
-              if (decoded.eventName !== "ActionExecuted") continue;
-              const args = decoded.args as unknown as {
-                user: Address;
-                agent: Address;
-                action: number;
-                rationale: string;
-              };
-              fetched.push({
-                tx: log.transactionHash!,
-                blockNumber: log.blockNumber!,
-                user: args.user,
-                agent: args.agent,
-                action: Number(args.action),
-                rationale: args.rationale,
-              });
-            } catch {
-              // Ignore logs that do not match the deployed ABI.
+        for (const source of sources) {
+          let cursor = source.nextBlock;
+          while (cursor <= latest) {
+            const chunkEnd = cursor + 49_999n;
+            const toBlock = chunkEnd < latest ? chunkEnd : latest;
+            const raw = await publicClient.getLogs({
+              address: source.address,
+              fromBlock: cursor,
+              toBlock,
+              event: actionExecutedEvent,
+            });
+            for (const log of raw) {
+              try {
+                const decoded = decodeEventLog({
+                  abi: strategistAbi,
+                  data: log.data,
+                  topics: log.topics,
+                });
+                if (decoded.eventName !== "ActionExecuted") continue;
+                const args = decoded.args as unknown as {
+                  user: Address;
+                  agent: Address;
+                  action: number;
+                  rationale: string;
+                };
+                fetched.push({
+                  tx: log.transactionHash!,
+                  blockNumber: log.blockNumber!,
+                  user: args.user,
+                  agent: args.agent,
+                  action: Number(args.action),
+                  rationale: args.rationale,
+                });
+              } catch {
+                // Ignore logs that do not match the deployed ABI.
+              }
             }
+            cursor = toBlock + 1n;
           }
-          cursor = toBlock + 1n;
+          source.nextBlock = latest + 1n;
         }
 
         if (cancelled) return;
-        nextBlock = latest + 1n;
         collected = [...collected, ...fetched];
         setLogs(
           [...collected].sort((a, b) =>

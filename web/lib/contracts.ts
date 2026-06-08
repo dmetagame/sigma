@@ -4,8 +4,18 @@ export const DEPLOYMENT = {
   chainId: 46630,
   sigmaCore: "0x3517b74800E6A731656D8cc809d77f730da4d1dA" as Address,
   sigmaVault: "0xB2aFb921AA8cE9F53f678782840216661f0d849d" as Address,
-  sigmaStrategist: "0x506aB1734D63748F0aDBCB74C13187E96A0D803a" as Address,
-  sigmaStrategistDeploymentBlock: 70_791_926n,
+  sigmaStrategist: "0x6Dc8E010DA00687eA823C1283b3fA8C9ED5436dB" as Address,
+  sigmaStrategistDeploymentBlock: 71_496_717n,
+  strategistHistory: [
+    {
+      address: "0x506aB1734D63748F0aDBCB74C13187E96A0D803a" as Address,
+      deploymentBlock: 70_791_926n,
+    },
+    {
+      address: "0x6Dc8E010DA00687eA823C1283b3fA8C9ED5436dB" as Address,
+      deploymentBlock: 71_496_717n,
+    },
+  ],
   oracleAdapter: "0x49E038450866157b3B0f790992690EcE842602E0" as Address,
   solidityBenchmark: "0x3f64d310B88f8c89aFd70ccCD33094DF7e7c3a91" as Address,
   usdc: "0xAc80194dc1aE8eF52df73e7e1864fB3C62290fe0" as Address,

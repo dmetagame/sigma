@@ -160,6 +160,33 @@ contract SigmaStrategistTest is Test {
         assertEq(usdc.balanceOf(address(strategist)), 0);
     }
 
+    function test_repay_bypasses_cooldown_and_preexisting_policy_violations() public {
+        _register(basePolicy);
+
+        vm.prank(pilot);
+        strategist.executeAction(alice, SigmaStrategist.ActionType.Borrow, abi.encode(uint256(5_000e6)), "borrow");
+
+        SigmaStrategist.Policy memory defensive = basePolicy;
+        defensive.maxStockShare = 0.5e18;
+        defensive.minHealthFactor = 10e18;
+        defensive.cooldownSec = 1 days;
+        _register(defensive);
+
+        vm.prank(alice);
+        usdc.approve(address(strategist), type(uint256).max);
+
+        // The position is concentrated, below the new 10x policy minimum, and
+        // still inside the previous action's cooldown. Partial deleveraging
+        // must nevertheless remain possible.
+        vm.prank(pilot);
+        strategist.executeAction(
+            alice, SigmaStrategist.ActionType.Repay, abi.encode(uint256(1_000e6)), "partial deleverage"
+        );
+
+        assertEq(vault.debt(alice), 4_000e6);
+        assertLt(vault.health(alice), defensive.minHealthFactor);
+    }
+
     function test_deactivate_locks_agent_out() public {
         _register(basePolicy);
 

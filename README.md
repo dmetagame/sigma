@@ -31,7 +31,7 @@ All on **Robinhood Chain testnet** (chain ID 46630). Stylus support was verified
 - Asset decimals, volatility, correlations, and global risk parameters are validated.
 - The agent can attempt at most one mutating action per tick and reads policy/cooldown/repayment capacity first.
 - The oracle enforces timestamp monotonicity, freshness, sequential-deviation limits, and owner-controlled emergency pause.
-- GitHub Actions hosts both the 30-minute oracle updater and six-hour policy-constrained Pilot tick.
+- GitHub Actions hosts the 30-minute oracle updater and a six-hour defensive guardian that can only repay unhealthy positions. Full demo-agent actions require manual dispatch.
 - Dry and live workflow paths were successfully exercised on 2026-06-07; receipt links are recorded in the deployment evidence.
 - This code has not received an independent professional audit and is not suitable for mainnet funds.
 - The hardened Solidity deployment below was broadcast and seeded on 2026-06-07. The earlier Vault and Strategist addresses are legacy demo contracts and should not be used.
@@ -42,7 +42,7 @@ All on **Robinhood Chain testnet** (chain ID 46630). Stylus support was verified
 |---|---|
 | Sigma Core (Stylus) | `0x3517b74800E6A731656D8cc809d77f730da4d1dA` |
 | Sigma Vault | `0xB2aFb921AA8cE9F53f678782840216661f0d849d` |
-| Sigma Strategist | `0x506aB1734D63748F0aDBCB74C13187E96A0D803a` |
+| Sigma Strategist | `0x6Dc8E010DA00687eA823C1283b3fA8C9ED5436dB` |
 | Oracle Adapter | `0x49E038450866157b3B0f790992690EcE842602E0` |
 | Solidity benchmark core | `0x3f64d310B88f8c89aFd70ccCD33094DF7e7c3a91` |
 
@@ -61,7 +61,7 @@ sigma/
 
 ```bash
 pnpm install
-cd contracts && forge test           # 36 passing
+cd contracts && forge test           # 37 passing
 cd ../core   && cargo test --release # 3 passing
 ```
 
@@ -92,7 +92,7 @@ Get them from `https://faucet.testnet.chain.robinhood.com` (drips ETH + 5 of eac
 - The vault is a funded credit demo, not a complete lending market: there are no lender shares, interest accrual, reserves, or bad-debt socialization.
 - The testnet oracle reporter is centralized even though it cross-checks two independent sources. Production requires on-chain verified feeds, monitoring, and multisig/timelock governance.
 - VaR is a model input, not a guarantee against jumps, liquidity gaps, or non-normal returns.
-- The Pilot is scheduled in GitHub Actions, but user policy registration and transaction flows are not yet exposed in the web app.
+- The defensive repayment guardian is scheduled in GitHub Actions; leverage-changing demo-agent actions require manual dispatch. User policy registration and transaction flows are not yet exposed in the web app.
 - At block `70915096`, the deployed five-asset benchmark measured 122,318 gas for Stylus and 128,960 for Solidity, a 5.15% saving. It is one workload, not a universal multiplier.
 
 Deployment receipts and demo-state evidence are recorded in [`docs/DEPLOYMENT-2026-06-07.md`](docs/DEPLOYMENT-2026-06-07.md).

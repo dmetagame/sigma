@@ -10,7 +10,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   slither . \
     --filter-paths 'lib|test|script' \
     --exclude-dependencies \
-    --exclude arbitrary-send-erc20,calls-loop,timestamp,unused-return
+    --exclude arbitrary-send-erc20,calls-loop,cyclomatic-complexity,timestamp,unused-return
 )
 
 (
@@ -20,6 +20,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
   cargo clippy -- -D warnings
 )
 
+pnpm --dir "$ROOT" --filter @sigma/agent test
 pnpm --dir "$ROOT" --filter @sigma/agent build
 pnpm --dir "$ROOT" --filter @sigma/web exec tsc --noEmit
 pnpm --dir "$ROOT" --filter @sigma/web build

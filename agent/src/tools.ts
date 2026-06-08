@@ -104,7 +104,7 @@ function encodeUint256(value: bigint): `0x${string}` {
   return encodeAbiParameters([{ type: "uint256" }], [value]);
 }
 
-async function submitAction(
+export async function submitAction(
   user: Address,
   action: ActionTypeName,
   data: `0x${string}`,
