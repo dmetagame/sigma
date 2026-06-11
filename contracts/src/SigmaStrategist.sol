@@ -105,6 +105,8 @@ contract SigmaStrategist is ReentrancyGuard {
         // withdrawal remain rate-limited because they can increase risk.
         if (action != ActionType.Repay && last != 0 && block.timestamp < last + p.cooldownSec) revert Cooldown();
         // Effects before interactions. Any later revert rolls this write back.
+        // Repay also restarts the cooldown window on purpose: deleveraging is
+        // never blocked, but it postpones the next risk-increasing action.
         lastActionAt[user] = block.timestamp;
 
         if (action == ActionType.Borrow) {

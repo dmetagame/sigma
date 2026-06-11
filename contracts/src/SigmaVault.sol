@@ -39,7 +39,6 @@ contract SigmaVault is ReentrancyGuard, Ownable {
 
     address[] public stocks;
     mapping(address => bool) public isSupported;
-    mapping(address => uint256) public indexOf; // stock -> stocks[] index
 
     /// Per-stock annualized volatility (WAD).
     mapping(address => uint256) public vol;
@@ -82,6 +81,7 @@ contract SigmaVault is ReentrancyGuard, Ownable {
         uint256 seizedAmount
     );
     event SupportedStockAdded(address indexed stock, uint256 volWad);
+    event VolatilityUpdated(address indexed stock, uint256 volWad);
     event CorrelationSet(address indexed a, address indexed b, int256 rhoWad);
     event RiskParamsUpdated(uint256 zScore, uint256 horizonSqrt, uint256 varSafetyFactor);
     event MaxLtvUpdated(uint256 maxLtvWad);
@@ -121,12 +121,21 @@ contract SigmaVault is ReentrancyGuard, Ownable {
         if (volWad == 0 || volWad > 5e18) revert InvalidRiskParameter();
         require(!isSupported[stock], "exists");
         isSupported[stock] = true;
-        indexOf[stock] = stocks.length;
         stocks.push(stock);
         vol[stock] = volWad;
         // Self-correlation is +1 by definition.
         corr[stock][stock] = int256(uint256(1e18));
         emit SupportedStockAdded(stock, volWad);
+    }
+
+    /// @notice Update the annualized volatility of a supported stock. VaR is a
+    ///         live function of vol, so estimates must be refreshable without a
+    ///         redeploy when the volatility regime shifts.
+    function setVol(address stock, uint256 volWad) external onlyOwner {
+        if (!isSupported[stock]) revert NotSupported();
+        if (volWad == 0 || volWad > 5e18) revert InvalidRiskParameter();
+        vol[stock] = volWad;
+        emit VolatilityUpdated(stock, volWad);
     }
 
     function setCorrelation(address a, address b, int256 rhoWad) external onlyOwner {

@@ -38,7 +38,11 @@ const WalletContext = createContext<WalletState | null>(null);
 
 function parseAddress(value: unknown): Address | undefined {
   if (!Array.isArray(value) || typeof value[0] !== "string") return undefined;
-  return getAddress(value[0]);
+  try {
+    return getAddress(value[0]);
+  } catch {
+    return undefined;
+  }
 }
 
 function parseChainId(value: unknown): number | undefined {
@@ -107,14 +111,20 @@ export function WalletProvider({ children }: PropsWithChildren) {
         ],
       });
     }
-    setChainId(robinhoodTestnet.id);
+    // Read the chain back from the provider rather than assuming the switch
+    // landed — some wallets resolve the request without actually switching.
+    setChainId(parseChainId(await provider.request({ method: "eth_chainId" })));
   }, []);
 
   const sendTransaction = useCallback(
     async ({ to, data }: { to: Address; data: Hex }) => {
       const provider = window.ethereum;
       if (!provider || !address) throw new Error("Connect a wallet first");
-      if (chainId !== robinhoodTestnet.id) {
+      // Authoritative check against the provider, not React state: a tx
+      // submitted on the wrong chain would target unrelated addresses.
+      const liveChainId = parseChainId(await provider.request({ method: "eth_chainId" }));
+      if (liveChainId !== robinhoodTestnet.id) {
+        setChainId(liveChainId);
         throw new Error(`Switch to ${robinhoodTestnet.name} before submitting`);
       }
       const hash = await provider.request({
@@ -124,7 +134,7 @@ export function WalletProvider({ children }: PropsWithChildren) {
       if (typeof hash !== "string") throw new Error("Wallet returned an invalid transaction hash");
       return hash as Hash;
     },
-    [address, chainId],
+    [address],
   );
 
   const value = useMemo(

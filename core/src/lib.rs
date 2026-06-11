@@ -49,6 +49,12 @@ impl SigmaCore {
     /// - `horizon_sqrt`    √(time horizon in years), WAD-scaled.
     ///
     /// Returns VaR in USDC 6-decimal units.
+    ///
+    /// Overflow semantics: intermediate math saturates (or zeroes a term)
+    /// instead of reverting, unlike the Solidity reference core, which
+    /// reverts. Inputs validated by `SigmaVault` (weights ≤ 1e18, vols ≤
+    /// 5e18, |ρ| ≤ 1e18, n ≤ 16) cannot reach those ranges; direct callers
+    /// passing unvalidated extreme inputs must not rely on a revert.
     pub fn compute_portfolio_var(
         &self,
         weights: Vec<U256>,

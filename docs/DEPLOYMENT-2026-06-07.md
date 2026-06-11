@@ -1,5 +1,11 @@
 # Hardened deployment - 2026-06-07
 
+> Superseded on 2026-06-11: the Vault and Strategist below were replaced
+> following a second maintainer audit. See
+> [`DEPLOYMENT-2026-06-11.md`](DEPLOYMENT-2026-06-11.md) for the active
+> addresses. The Stylus core, oracle adapter, and benchmark records here
+> remain current.
+
 Network: Robinhood Chain testnet, chain ID `46630`.
 
 Production app: https://sigma-two-iota.vercel.app

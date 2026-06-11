@@ -33,9 +33,10 @@ function state(overrides: Partial<PortfolioState> = {}): PortfolioState {
   };
 }
 
-test("plans only the repayment needed to restore policy health", () => {
+test("plans the repayment needed to restore policy health plus a 2% buffer", () => {
+  // target debt = maxBorrowable / (minHF · 1.02) = 120e6 / 1.224 = 98_039_215
   const plan = planDefensiveRepay(state());
-  assert.equal(plan?.amount6, 50_000_000n);
+  assert.equal(plan?.amount6, 150_000_000n - 98_039_215n);
 });
 
 test("uses available funds for partial deleveraging", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   encodeFunctionData,
   formatUnits,
@@ -172,8 +172,21 @@ export function OperatorPanel() {
     void load().catch(() => setSnapshot(undefined));
   }, [load]);
 
+  // Sync the policy form only when the on-chain policy itself changes, so a
+  // background refresh after an unrelated action (e.g. a deposit) does not
+  // clobber values the user is still editing.
+  const syncedPolicy = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (!snapshot?.active) return;
+    const fingerprint = [
+      snapshot.agent,
+      snapshot.maxBorrow6,
+      snapshot.maxStockShare,
+      snapshot.minHealthFactor,
+      snapshot.cooldownSec,
+    ].join("|");
+    if (syncedPolicy.current === fingerprint) return;
+    syncedPolicy.current = fingerprint;
     setAgent(snapshot.agent);
     setMaxBorrow(trimDecimal(formatUnits(snapshot.maxBorrow6, 6)));
     setMaxStockShare(percentFromWad(snapshot.maxStockShare));
