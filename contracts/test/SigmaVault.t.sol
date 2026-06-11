@@ -190,6 +190,29 @@ contract SigmaVaultTest is Test {
         vault.setCorrelation(address(aapl), address(tsla), 1.01e18);
     }
 
+    function test_setVol_updates_supported_stock() public {
+        vm.prank(owner);
+        vault.setVol(address(aapl), 0.6e18);
+        assertEq(vault.vol(address(aapl)), 0.6e18);
+    }
+
+    function test_setVol_rejects_unsupported_stock_and_bad_bounds() public {
+        vm.startPrank(owner);
+        vm.expectRevert(SigmaVault.NotSupported.selector);
+        vault.setVol(makeAddr("unsupported"), 0.5e18);
+        vm.expectRevert(SigmaVault.InvalidRiskParameter.selector);
+        vault.setVol(address(aapl), 0);
+        vm.expectRevert(SigmaVault.InvalidRiskParameter.selector);
+        vault.setVol(address(aapl), 5e18 + 1);
+        vm.stopPrank();
+    }
+
+    function test_setVol_rejects_non_owner() public {
+        vm.prank(alice);
+        vm.expectRevert();
+        vault.setVol(address(aapl), 0.6e18);
+    }
+
     function testFuzz_successfulBorrowAlwaysLeavesPositionHealthy(uint96 collateralAmount, uint96 borrowAmount) public {
         uint256 shares = bound(uint256(collateralAmount), 1e18, 10_000e18);
         _mint(aapl, alice, shares);

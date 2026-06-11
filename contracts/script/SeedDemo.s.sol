@@ -37,7 +37,9 @@ contract SeedDemo is Script {
         tsla.forceApprove(address(vault), TSLA_COLLATERAL);
         vault.deposit(address(tsla), TSLA_COLLATERAL);
         vault.setExecutor(address(strategist));
-        usdc.forceApprove(address(strategist), type(uint256).max);
+        // Bounded repayment allowance matching the policy borrow cap, same as
+        // the web operator flow — never an unlimited approval.
+        usdc.forceApprove(address(strategist), 150e6);
         strategist.register(
             SigmaStrategist.Policy({
                 agent: pilot,

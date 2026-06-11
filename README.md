@@ -28,21 +28,21 @@ All on **Robinhood Chain testnet** (chain ID 46630). Stylus support was verified
 
 - Liquidations are value-bounded to repayment plus a 5% incentive and limited to a 50% close factor.
 - An 80% base-LTV ceiling backs up the dynamic VaR limit.
-- Asset decimals, volatility, correlations, and global risk parameters are validated.
+- Asset decimals, volatility, correlations, and global risk parameters are validated, and per-stock volatility is owner-updatable (`setVol`) so risk inputs can track regime changes without a redeploy.
 - The agent can attempt at most one mutating action per tick and reads policy/cooldown/repayment capacity first.
 - The oracle enforces timestamp monotonicity, freshness, sequential-deviation limits, and owner-controlled emergency pause.
 - GitHub Actions hosts the 30-minute oracle updater and a six-hour defensive guardian that can only repay unhealthy positions. Full demo-agent actions require manual dispatch.
 - Dry and live workflow paths were successfully exercised on 2026-06-07; receipt links are recorded in the deployment evidence.
 - This code has not received an independent professional audit and is not suitable for mainnet funds.
-- The hardened Solidity deployment below was broadcast and seeded on 2026-06-07. The earlier Vault and Strategist addresses are legacy demo contracts and should not be used.
+- The hardened Solidity deployment below was broadcast and seeded on 2026-06-11 after a second maintainer audit ([`docs/AUDIT-2026-06-10.md`](docs/AUDIT-2026-06-10.md)). Earlier Vault and Strategist addresses are legacy demo contracts and should not be used.
 
 ### Hardened deployment
 
 | Contract | Robinhood Chain testnet address |
 |---|---|
 | Sigma Core (Stylus) | `0x3517b74800E6A731656D8cc809d77f730da4d1dA` |
-| Sigma Vault | `0xB2aFb921AA8cE9F53f678782840216661f0d849d` |
-| Sigma Strategist | `0x6Dc8E010DA00687eA823C1283b3fA8C9ED5436dB` |
+| Sigma Vault | `0x077292Dbc17214719d09FAcFA58915F48525E0AF` |
+| Sigma Strategist | `0x652C206Add1418a09C34e7be311611D79a422B78` |
 | Oracle Adapter | `0x49E038450866157b3B0f790992690EcE842602E0` |
 | Solidity benchmark core | `0x3f64d310B88f8c89aFd70ccCD33094DF7e7c3a91` |
 
@@ -61,7 +61,7 @@ sigma/
 
 ```bash
 pnpm install
-cd contracts && forge test           # 37 passing
+cd contracts && forge test           # 40 passing
 cd ../core   && cargo test --release # 3 passing
 ```
 
@@ -91,11 +91,13 @@ Get them from `https://faucet.testnet.chain.robinhood.com` (drips ETH + 5 of eac
 
 - The vault is a funded credit demo, not a complete lending market: there are no lender shares, interest accrual, reserves, or bad-debt socialization.
 - The testnet oracle reporter is centralized even though it cross-checks two independent sources. Production requires on-chain verified feeds, monitoring, and multisig/timelock governance.
+- Pausing the oracle also freezes liquidations and withdrawals for indebted users, since every health check reads prices. A production design needs per-asset circuit breakers with a grace-period unwind instead of a global read freeze.
+- If price moves more than the oracle's sequential-deviation limit between publishes (e.g. after a reporter outage), updates revert until the owner temporarily raises the limit (hard-capped at 50%) and the reporter publishes staged steps back to market. A gap larger than 50% is unrecoverable by design, because the owner cannot write prices directly.
 - VaR is a model input, not a guarantee against jumps, liquidity gaps, or non-normal returns.
 - The web app exposes wallet-driven deposit, withdrawal, borrow, repayment, and Pilot policy controls. The defensive repayment guardian is scheduled in GitHub Actions; leverage-changing demo-agent actions still require manual dispatch.
 - At block `70915096`, the deployed five-asset benchmark measured 122,318 gas for Stylus and 128,960 for Solidity, a 5.15% saving. It is one workload, not a universal multiplier.
 
-Deployment receipts and demo-state evidence are recorded in [`docs/DEPLOYMENT-2026-06-07.md`](docs/DEPLOYMENT-2026-06-07.md).
+Deployment receipts and demo-state evidence are recorded in [`docs/DEPLOYMENT-2026-06-11.md`](docs/DEPLOYMENT-2026-06-11.md) (migration) and [`docs/DEPLOYMENT-2026-06-07.md`](docs/DEPLOYMENT-2026-06-07.md) (prior hardened deployment).
 The maintainer security review and external-audit handoff are in [`docs/SECURITY-REVIEW-2026-06-07.md`](docs/SECURITY-REVIEW-2026-06-07.md) and [`docs/INDEPENDENT-AUDIT-SCOPE.md`](docs/INDEPENDENT-AUDIT-SCOPE.md).
 
 ## Robinhood Chain testnet

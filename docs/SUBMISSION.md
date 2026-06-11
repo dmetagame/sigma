@@ -40,14 +40,14 @@ But equity collateral without portfolio-level risk pricing is just a worse versi
 **Sigma Vault — collateralized lending against tokenized equities**
 - Non-custodial. Five live stocks supported. Borrows real testnet USDC (`0xAc80…0fe0`).
 - Borrow ceiling = min(`portfolio_value − safety·VaR`, 80%·`portfolio_value`). The base-LTV cap is a hard backstop against any oracle/VaR understatement.
-- Live address: `0xB2aFb921AA8cE9F53f678782840216661f0d849d`.
+- Live address: `0x077292Dbc17214719d09FAcFA58915F48525E0AF`.
 
 **Sigma Strategist — agent-bound policy executor**
 - Per-user `Policy` struct: `agent`, `maxBorrow`, `maxStockShare`, `minHealthFactor`, `cooldownSec`, `active`.
 - Off-chain Pilot signs proposals; Strategist validates against policy + simulates against Vault before forwarding.
 - Repayment is treated as strictly risk-reducing — bypasses cooldown and non-worsening postconditions so deleveraging is never blocked.
 - Every successful action emits `ActionExecuted(user, agent, type, data, rationale)` — the chain is the audit log.
-- Live address: `0x6Dc8E010DA00687eA823C1283b3fA8C9ED5436dB`.
+- Live address: `0x652C206Add1418a09C34e7be311611D79a422B78`.
 
 **Cross-checked Oracle Adapter**
 - A dedicated reporter publishes prices only after independent Pyth + RedStone agreement within 200 bps off-chain.
@@ -65,7 +65,7 @@ But equity collateral without portfolio-level risk pricing is just a worse versi
 ### How it addresses the four judging criteria
 
 **Smart contract quality**
-- 37 Foundry tests including 512 fuzz runs across two Vault safety invariants (liquidation never seizes above the configured bonus; successful borrow always leaves the position healthy).
+- 40 Foundry tests including 512 fuzz runs across two Vault safety invariants (liquidation never seizes above the configured bonus; successful borrow always leaves the position healthy).
 - Slither static analysis: 0 findings after remediation, with each excluded detector class documented in `SECURITY-REVIEW-2026-06-07.md`.
 - Cross-language numerical equivalence proven (Stylus and Solidity cores produce identical VaR for the deployed reference vector).
 - CI runs against a Foundry binary pinned by SHA-256.
@@ -95,8 +95,8 @@ But equity collateral without portfolio-level risk pricing is just a worse versi
 - **Live app**: https://sigma-two-iota.vercel.app
 - **Repository**: https://github.com/dmetagame/sigma
 - **Demo video**: _(to be added)_
-- **Hardened deployment record**: [docs/DEPLOYMENT-2026-06-07.md](https://github.com/dmetagame/sigma/blob/main/docs/DEPLOYMENT-2026-06-07.md)
-- **Security review**: [docs/SECURITY-REVIEW-2026-06-07.md](https://github.com/dmetagame/sigma/blob/main/docs/SECURITY-REVIEW-2026-06-07.md)
+- **Hardened deployment record**: [docs/DEPLOYMENT-2026-06-11.md](https://github.com/dmetagame/sigma/blob/main/docs/DEPLOYMENT-2026-06-11.md)
+- **Security review**: [docs/SECURITY-REVIEW-2026-06-07.md](https://github.com/dmetagame/sigma/blob/main/docs/SECURITY-REVIEW-2026-06-07.md) and [docs/AUDIT-2026-06-10.md](https://github.com/dmetagame/sigma/blob/main/docs/AUDIT-2026-06-10.md)
 - **Independent audit scope**: [docs/INDEPENDENT-AUDIT-SCOPE.md](https://github.com/dmetagame/sigma/blob/main/docs/INDEPENDENT-AUDIT-SCOPE.md)
 - **Block explorer**: https://explorer.testnet.chain.robinhood.com/address/0x3517b74800E6A731656D8cc809d77f730da4d1dA (Sigma Core, Stylus, activated)
 

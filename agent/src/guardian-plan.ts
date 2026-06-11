@@ -19,6 +19,10 @@ export interface GuardianPlan {
 
 const WAD = 10n ** 18n;
 
+/// Deleverage 2% past the policy minimum so a small adverse price move does
+/// not immediately re-trigger the guardian on the next scheduled run.
+const RETARGET_BUFFER_WAD = 1_020_000_000_000_000_000n;
+
 export function planDefensiveRepay(state: GuardianState): GuardianPlan | null {
   if (!state.policy.active) return null;
   if (state.policy.agent.toLowerCase() !== state.pilotEoa.toLowerCase()) return null;
@@ -27,7 +31,8 @@ export function planDefensiveRepay(state: GuardianState): GuardianPlan | null {
   const available = min(state.debt6, state.usdcBalance6, state.strategistAllowance6);
   if (available === 0n) return null;
 
-  const targetDebt = (state.maxBorrowable6 * WAD) / state.policy.minHealthFactorWad;
+  const bufferedMinHealth = (state.policy.minHealthFactorWad * RETARGET_BUFFER_WAD) / WAD;
+  const targetDebt = (state.maxBorrowable6 * WAD) / bufferedMinHealth;
   const required = state.debt6 > targetDebt ? state.debt6 - targetDebt : 0n;
   const amount6 = min(required, available);
   if (amount6 === 0n) return null;

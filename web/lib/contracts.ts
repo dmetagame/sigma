@@ -3,10 +3,14 @@ import type { Address } from "viem";
 export const DEPLOYMENT = {
   chainId: 46630,
   sigmaCore: "0x3517b74800E6A731656D8cc809d77f730da4d1dA" as Address,
-  sigmaVault: "0xB2aFb921AA8cE9F53f678782840216661f0d849d" as Address,
-  sigmaStrategist: "0x6Dc8E010DA00687eA823C1283b3fA8C9ED5436dB" as Address,
-  sigmaStrategistDeploymentBlock: 71_496_717n,
+  sigmaVault: "0x077292Dbc17214719d09FAcFA58915F48525E0AF" as Address,
+  sigmaStrategist: "0x652C206Add1418a09C34e7be311611D79a422B78" as Address,
+  sigmaStrategistDeploymentBlock: 72_892_596n,
   strategistHistory: [
+    {
+      address: "0xB4821E0617b8e3c8Ddd7359A9f338e7176A0633b" as Address,
+      deploymentBlock: 69_611_116n,
+    },
     {
       address: "0x506aB1734D63748F0aDBCB74C13187E96A0D803a" as Address,
       deploymentBlock: 70_791_926n,
@@ -14,6 +18,10 @@ export const DEPLOYMENT = {
     {
       address: "0x6Dc8E010DA00687eA823C1283b3fA8C9ED5436dB" as Address,
       deploymentBlock: 71_496_717n,
+    },
+    {
+      address: "0x652C206Add1418a09C34e7be311611D79a422B78" as Address,
+      deploymentBlock: 72_892_596n,
     },
   ],
   oracleAdapter: "0x49E038450866157b3B0f790992690EcE842602E0" as Address,
