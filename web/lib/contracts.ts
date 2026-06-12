@@ -41,3 +41,4 @@ export const DEPLOYMENT = {
 } as const;
 
 export const EXPLORER = "https://explorer.testnet.chain.robinhood.com";
+export const GITHUB_REPO = "https://github.com/dmetagame/sigma";

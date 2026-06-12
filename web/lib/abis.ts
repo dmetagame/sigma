@@ -103,6 +103,48 @@ export const vaultAbi = [
     inputs: [{ name: "amount", type: "uint256" }],
     outputs: [],
   },
+  {
+    type: "function",
+    name: "vol",
+    stateMutability: "view",
+    inputs: [{ type: "address" }],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "corr",
+    stateMutability: "view",
+    inputs: [{ type: "address" }, { type: "address" }],
+    outputs: [{ type: "int256" }],
+  },
+  {
+    type: "function",
+    name: "zScore",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "horizonSqrt",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "varSafetyFactor",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "maxLtvWad",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+  },
 ] as const;
 
 export const oracleAbi = [
@@ -112,6 +154,16 @@ export const oracleAbi = [
     stateMutability: "view",
     inputs: [{ type: "address" }],
     outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "priceOf",
+    stateMutability: "view",
+    inputs: [{ type: "address" }],
+    outputs: [
+      { name: "priceWad", type: "uint192" },
+      { name: "observedAt", type: "uint64" },
+    ],
   },
 ] as const;
 

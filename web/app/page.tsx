@@ -1,6 +1,8 @@
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
+import { ProofStrip } from "@/components/ProofStrip";
 import { PortfolioPanel } from "@/components/PortfolioPanel";
+import { StressPanel } from "@/components/StressPanel";
 import { StylusShowcase } from "@/components/StylusShowcase";
 import { PilotLog } from "@/components/PilotLog";
 import { OperatorPanel } from "@/components/OperatorPanel";
@@ -10,8 +12,10 @@ export default function Page() {
     <>
       <Header />
       <main>
+        <ProofStrip />
         <Hero />
         <PortfolioPanel />
+        <StressPanel />
         <OperatorPanel />
         <StylusShowcase />
         <PilotLog />
