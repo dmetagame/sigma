@@ -120,6 +120,23 @@ function deviationBps(a: bigint, b: bigint): bigint {
   return (difference * 10_000n + a - 1n) / a;
 }
 
+async function withRetry<T>(label: string, attempt: () => Promise<T>, attempts = 3): Promise<T> {
+  let lastError: unknown;
+  for (let i = 1; i <= attempts; i++) {
+    try {
+      return await attempt();
+    } catch (error) {
+      lastError = error;
+      if (i < attempts) {
+        const delayMs = 2_000 * i;
+        console.warn(`${label} attempt ${i}/${attempts} failed; retrying in ${delayMs}ms`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+  throw lastError;
+}
+
 async function fetchPyth(): Promise<Map<string, PythParsedPrice>> {
   const query = stocks.map((stock) => `ids%5B%5D=${stock.pythId.slice(2)}`).join("&");
   const response = await fetch(
@@ -151,9 +168,15 @@ async function main() {
   const rpcUrl = process.env.RH_TESTNET_RPC ?? "https://rpc.testnet.chain.robinhood.com";
   const publicClient = createPublicClient({ chain, transport: http(rpcUrl) });
 
-  const [pyth, redStonePrices, block] = await Promise.all([
-    fetchPyth(),
-    Promise.all(stocks.map(fetchRedStone)),
+  // Pyth is one batched request: nothing can be cross-checked without it, so
+  // exhausting its retries is fatal. RedStone is fetched per symbol; a symbol
+  // whose source stays down is skipped (its stored price ages within the
+  // on-chain staleness window) instead of aborting the other publishes.
+  const [pyth, redStoneResults, block] = await Promise.all([
+    withRetry("Pyth", fetchPyth),
+    Promise.allSettled(
+      stocks.map((stock) => withRetry(`RedStone ${stock.symbol}`, () => fetchRedStone(stock))),
+    ),
     publicClient.getBlock(),
   ]);
 
@@ -165,60 +188,82 @@ async function main() {
     deviation: bigint;
   }>;
 
+  const skipped: string[] = [];
+
   for (let i = 0; i < stocks.length; i++) {
     const stock = stocks[i]!;
-    const pythPrice = pyth.get(stock.pythId.slice(2).toLowerCase());
-    if (!pythPrice) throw new Error(`Pyth omitted ${stock.symbol}`);
-    const redStonePrice = redStonePrices[i]!;
-    const pythWad = pythToWad(pythPrice.price.price, pythPrice.price.expo);
-    const redStoneWad = redStoneToWad(redStonePrice.value);
-    const deviation = deviationBps(pythWad, redStoneWad);
-    if (deviation > maxSourceDeviationBps) {
-      throw new Error(
-        `${stock.symbol} source deviation ${deviation} bps exceeds ${maxSourceDeviationBps} bps`,
-      );
-    }
-
-    const pythObservedAt = BigInt(pythPrice.price.publish_time);
-    const redStoneObservedAt = BigInt(Math.floor(redStonePrice.timestamp / 1000));
-    for (const [source, timestamp] of [
-      ["Pyth", pythObservedAt],
-      ["RedStone", redStoneObservedAt],
-    ] as const) {
-      if (timestamp > block.timestamp || block.timestamp - timestamp > maxSourceAgeSec) {
-        throw new Error(`${stock.symbol} ${source} timestamp is outside the accepted window`);
+    try {
+      const pythPrice = pyth.get(stock.pythId.slice(2).toLowerCase());
+      if (!pythPrice) throw new Error(`Pyth omitted ${stock.symbol}`);
+      const redStoneResult = redStoneResults[i]!;
+      if (redStoneResult.status === "rejected") {
+        const cause = redStoneResult.reason;
+        throw new Error(cause instanceof Error ? cause.message : String(cause));
       }
-    }
-    const observedAt = pythObservedAt < redStoneObservedAt ? pythObservedAt : redStoneObservedAt;
+      const redStonePrice = redStoneResult.value;
+      const pythWad = pythToWad(pythPrice.price.price, pythPrice.price.expo);
+      const redStoneWad = redStoneToWad(redStonePrice.value);
+      const deviation = deviationBps(pythWad, redStoneWad);
+      if (deviation > maxSourceDeviationBps) {
+        throw new Error(
+          `${stock.symbol} source deviation ${deviation} bps exceeds ${maxSourceDeviationBps} bps`,
+        );
+      }
 
-    const [, storedAt] = (await publicClient.readContract({
-      address: oracle,
-      abi: oracleAbi,
-      functionName: "priceOf",
-      args: [stock.address],
-    })) as readonly [bigint, bigint];
-    if (observedAt <= storedAt) {
-      console.log(`${stock.symbol}: no newer Pyth market observation`);
-      continue;
-    }
+      const pythObservedAt = BigInt(pythPrice.price.publish_time);
+      const redStoneObservedAt = BigInt(Math.floor(redStonePrice.timestamp / 1000));
+      for (const [source, timestamp] of [
+        ["Pyth", pythObservedAt],
+        ["RedStone", redStoneObservedAt],
+      ] as const) {
+        if (timestamp > block.timestamp || block.timestamp - timestamp > maxSourceAgeSec) {
+          throw new Error(`${stock.symbol} ${source} timestamp is outside the accepted window`);
+        }
+      }
+      const observedAt = pythObservedAt < redStoneObservedAt ? pythObservedAt : redStoneObservedAt;
 
-    const priceWad = (pythWad + redStoneWad) / 2n;
-    const evidenceHash = keccak256(
-      encodeAbiParameters(
-        [
-          { type: "bytes32" },
-          { type: "uint256" },
-          { type: "uint256" },
-          { type: "uint64" },
-          { type: "uint64" },
-        ],
-        [stock.pythId, pythWad, redStoneWad, pythObservedAt, redStoneObservedAt],
-      ),
-    );
-    updates.push({ stock, priceWad, observedAt, evidenceHash, deviation });
-    console.log(
-      `${stock.symbol}: pyth=${pythWad} redstone=${redStoneWad} deviation=${deviation}bps observedAt=${observedAt}`,
-    );
+      const [, storedAt] = (await publicClient.readContract({
+        address: oracle,
+        abi: oracleAbi,
+        functionName: "priceOf",
+        args: [stock.address],
+      })) as readonly [bigint, bigint];
+      if (observedAt <= storedAt) {
+        console.log(`${stock.symbol}: no newer Pyth market observation`);
+        continue;
+      }
+
+      const priceWad = (pythWad + redStoneWad) / 2n;
+      const evidenceHash = keccak256(
+        encodeAbiParameters(
+          [
+            { type: "bytes32" },
+            { type: "uint256" },
+            { type: "uint256" },
+            { type: "uint64" },
+            { type: "uint64" },
+          ],
+          [stock.pythId, pythWad, redStoneWad, pythObservedAt, redStoneObservedAt],
+        ),
+      );
+      updates.push({ stock, priceWad, observedAt, evidenceHash, deviation });
+      console.log(
+        `${stock.symbol}: pyth=${pythWad} redstone=${redStoneWad} deviation=${deviation}bps observedAt=${observedAt}`,
+      );
+    } catch (cause) {
+      // The stored price stays valid within the on-chain staleness window, so
+      // one symbol's bad source must not block the other symbols' publishes.
+      const message = cause instanceof Error ? cause.message : String(cause);
+      console.warn(`skipping ${stock.symbol}: ${message}`);
+      skipped.push(`${stock.symbol} (${message})`);
+    }
+  }
+
+  if (skipped.length === stocks.length) {
+    throw new Error(`every symbol failed cross-check or sourcing: ${skipped.join("; ")}`);
+  }
+  if (skipped.length > 0) {
+    console.warn(`proceeding without ${skipped.length} symbol(s): ${skipped.join("; ")}`);
   }
 
   if (updates.length === 0) {
