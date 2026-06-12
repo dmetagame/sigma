@@ -20,7 +20,7 @@ The current Robinhood Chain testnet deployment is a hackathon prototype. Stock p
 | Sigma Vault | Solidity | Non-custodial collateral vault: tokenized stocks + USDC, dynamic LTV from Core |
 | Sigma Strategist | Solidity | Agent-bound policy executor with on-chain guardrails |
 | Sigma Pilot | TypeScript / AI SDK | Gemini agent: demo regime signal → policy-bound action |
-| Sigma Web | Next.js 16 | Dashboard: portfolio, risk model, deployment proof, decision log |
+| Sigma Web | Next.js 16 | Dashboard: portfolio, stress lab (scenario VaR via the live Stylus core), proof strip, decision log |
 
 All on **Robinhood Chain testnet** (chain ID 46630). Stylus support was verified via `cargo stylus check` against `https://rpc.testnet.chain.robinhood.com` on 2026-06-05.
 

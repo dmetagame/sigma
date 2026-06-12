@@ -70,6 +70,32 @@ Post-seed state (verified by `scripts/verify-deployment.sh`):
   were updated; the decision log now also covers the first legacy Strategist
   (`0xB4821E0617b8e3c8Ddd7359A9f338e7176A0633b`, block `69611116`).
 
+## Addendum — 2026-06-12 demo-state refresh
+
+Acting on the external prize-readiness audit (`sigma-prize-audit-2026-06-11`):
+
+- Vault liquidity topped up 150 → 300 USDC, sourced from the Aave Stock fork
+  Pool (`0xb6190fA4E71fA8A4DbE4De98F49f9980Ee9b4C17`) against the deployer's
+  existing collateral there:
+  - Borrow 150 USDC: `0x6f35548661c974a5198b0f832f66cbef8b68cff76188ad93e5a02d52d1932441`
+  - Transfer to Vault: `0xa409add61285b0e5ece703fd114f2bf95a7c37e652400ac858d25cadf9281663`
+- Demo basket diversified from 1 TSLA to all five stocks so correlation terms
+  carry real weight in the portfolio VaR:
+  - Deposit 0.8 AMD: `0xaf4b50a2a581a0745d6eb16d29facbd6de5fc4bceae52b77a3210da93c1bb4f3`
+  - Deposit 1.6 AMZN: `0xc6f7dd732a1a8aa4e48442eff78a5222795ab87691b4d47efa66348802fdeb72`
+  - Deposit 4.8 NFLX: `0x523bb3652f1c5c4e1416cb0e3383825ab7a7262df654c68750ac2338444f0c4c`
+  - Deposit 3.0 PLTR: `0xabff229f4545a177e6a203b9ea099fef4c693344dbc74db5bc01d03e23f01d61`
+- Fresh full-agent dispatch (`pilot.yml`, mode `execute`): the Pilot read the
+  stressed demo regime and repaid the entire 50 USDC debt with its rationale
+  recorded on-chain:
+  `0x9694ac235fb8515a049768a1cf59e81f77dc50c9925aed90243663f2e60e4885`
+  (block `74138727`, gas `345973`).
+
+Resulting demo state: portfolio value 1,945.78 USDC across five stocks, VaR
+72.27 USDC (≈93.6 USDC if the same basket were priced without diversification
+— the correlation benefit is now visible on-chain), max borrowable 1,556.63
+USDC, debt 0, Vault USDC liquidity 350.
+
 ## Legacy deployments
 
 The 2026-06-07 record remains in
