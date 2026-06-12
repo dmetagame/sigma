@@ -87,6 +87,10 @@ The deploy script auto-discovers real Robinhood Chain testnet token addresses:
 
 Get them from `https://faucet.testnet.chain.robinhood.com` (drips ETH + 5 of each stock per request). USDC isn't dripped — borrow some against the stocks via the **Aave Stock** fork that's already live on RH testnet.
 
+## Owner powers (testnet disclosure)
+
+The current owner of every contract is the testnet deployer EOA. Concretely it can: update per-stock volatilities and pairwise correlations, change the VaR z-score/horizon/safety factor and the max-LTV cap, swap the Sigma Core and oracle adapter addresses, and add stocks. The oracle owner can rotate the reporter, tune staleness/deviation limits, and pause reads. The owner **cannot** write prices directly — only the reporter can, through the cross-check pipeline. Production would put all of this behind a multisig + timelock, with parameter-change events monitored by alerting and a decentralized reporter set.
+
 ## Known prototype limits
 
 - The vault is a funded credit demo, not a complete lending market: there are no lender shares, interest accrual, reserves, or bad-debt socialization.
