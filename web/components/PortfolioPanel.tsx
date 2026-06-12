@@ -23,6 +23,7 @@ interface PortfolioSnapshot {
   varUsd?: bigint;
   maxBorrow?: bigint;
   health?: bigint;
+  vaultLiquidity?: bigint;
   positions: PositionRow[];
 }
 
@@ -39,7 +40,7 @@ export function PortfolioPanel() {
 
     async function load() {
       try {
-        const [portfolioValue, debt, varUsd, maxBorrow, health, positions] = await Promise.all([
+        const [portfolioValue, debt, varUsd, maxBorrow, health, vaultLiquidity, positions] = await Promise.all([
           publicClient.readContract({
             address: DEPLOYMENT.sigmaVault,
             abi: vaultAbi,
@@ -69,6 +70,12 @@ export function PortfolioPanel() {
             abi: vaultAbi,
             functionName: "health",
             args: [user],
+          }),
+          publicClient.readContract({
+            address: DEPLOYMENT.usdc,
+            abi: erc20Abi,
+            functionName: "balanceOf",
+            args: [DEPLOYMENT.sigmaVault],
           }),
           Promise.all(
             DEPLOYMENT.stocks.map(async (stock) => {
@@ -109,6 +116,7 @@ export function PortfolioPanel() {
           varUsd,
           maxBorrow,
           health,
+          vaultLiquidity,
           positions,
         });
         setReadError(false);
@@ -155,7 +163,11 @@ export function PortfolioPanel() {
             value={usd(snapshot.varUsd)}
             sub="from sigma core (stylus)"
           />
-          <Stat label="Max borrowable" value={usd(snapshot.maxBorrow)} />
+          <Stat
+            label="Max borrowable"
+            value={usd(snapshot.maxBorrow)}
+            sub={`risk ceiling · vault holds ${usd(snapshot.vaultLiquidity)}`}
+          />
           <Stat label="Health factor" value={wad(snapshot.health, 2)} sub="≥ 1 = solvent" />
         </div>
 

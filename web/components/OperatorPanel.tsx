@@ -31,6 +31,7 @@ interface PolicySnapshot {
   debt: bigint;
   maxBorrowable: bigint;
   usdcBalance: bigint;
+  vaultLiquidity: bigint;
 }
 
 type BusyAction = "deposit" | "withdraw" | "borrow" | "repay" | "enable" | "revoke";
@@ -115,7 +116,7 @@ export function OperatorPanel() {
       setSnapshot(undefined);
       return;
     }
-    const [policy, executor, strategistAllowance, debt, maxBorrowable, usdcBalance] = await Promise.all([
+    const [policy, executor, strategistAllowance, debt, maxBorrowable, usdcBalance, vaultLiquidity] = await Promise.all([
       publicClient.readContract({
         address: DEPLOYMENT.sigmaStrategist,
         abi: strategistAbi,
@@ -152,6 +153,12 @@ export function OperatorPanel() {
         functionName: "balanceOf",
         args: [address],
       }),
+      publicClient.readContract({
+        address: DEPLOYMENT.usdc,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [DEPLOYMENT.sigmaVault],
+      }),
     ]);
     setSnapshot({
       agent: policy[0],
@@ -165,6 +172,7 @@ export function OperatorPanel() {
       debt,
       maxBorrowable,
       usdcBalance,
+      vaultLiquidity,
     });
   }, [address, chainId]);
 
@@ -293,8 +301,14 @@ export function OperatorPanel() {
   async function borrow() {
     if (!snapshot) throw new Error("Position data is not available yet");
     const amount = positiveUnits(usdcAmount, 6, "USDC amount");
-    const available = snapshot.maxBorrowable > snapshot.debt ? snapshot.maxBorrowable - snapshot.debt : 0n;
-    if (amount > available) throw new Error(`Borrow exceeds available capacity of ${formatUnits(available, 6)} USDC`);
+    const riskCapacity = snapshot.maxBorrowable > snapshot.debt ? snapshot.maxBorrowable - snapshot.debt : 0n;
+    // The risk model can allow more than the vault currently holds; a borrow
+    // above the USDC balance would revert on transfer, so bound by both.
+    const available = riskCapacity < snapshot.vaultLiquidity ? riskCapacity : snapshot.vaultLiquidity;
+    if (amount > available) {
+      const limit = riskCapacity < snapshot.vaultLiquidity ? "risk capacity" : "vault USDC liquidity";
+      throw new Error(`Borrow exceeds available ${limit} of ${formatUnits(available, 6)} USDC`);
+    }
     await submit(
       "Borrow USDC",
       DEPLOYMENT.sigmaVault,
@@ -454,7 +468,8 @@ export function OperatorPanel() {
               {snapshot && (
                 <div className="text-right font-mono text-xs text-muted">
                   <div>debt {usd(snapshot.debt)}</div>
-                  <div>capacity {usd(snapshot.maxBorrowable)}</div>
+                  <div>risk capacity {usd(snapshot.maxBorrowable)}</div>
+                  <div>vault liquidity {usd(snapshot.vaultLiquidity)}</div>
                   <div>USDC {formatUnits(snapshot.usdcBalance, 6)}</div>
                 </div>
               )}
