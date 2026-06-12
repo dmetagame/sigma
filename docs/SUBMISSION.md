@@ -60,7 +60,12 @@ But equity collateral without portfolio-level risk pricing is just a worse versi
 
 **Scheduled automation — defensive guardian, not full agent**
 - `.github/workflows/pilot.yml` runs **a deterministic repay-only guardian every 6 hours**, not the full LLM agent. It will only submit a transaction when health is below the user's policy minimum and the user has USDC + Strategist allowance to repay. Full demo-agent actions require explicit manual workflow dispatch.
-- `.github/workflows/oracle-update.yml` runs the cross-checked publisher every 30 minutes.
+- `.github/workflows/oracle-update.yml` runs the cross-checked publisher every 30 minutes, retries transient source failures, and publishes the symbols that pass cross-check even if one source is down.
+
+**Proof-first dashboard**
+- First-fold proof strip: repo link, live CI/oracle/guardian workflow badges, live oracle price age, and the latest on-chain `ActionExecuted` tx.
+- Stress lab: four downside scenarios (TSLA −20%, all −15%, vol ×2, correlations → 0.9) re-price the live basket and send each shocked input set to the deployed Stylus core's `computePortfolioVar` — the chain computes scenario VaR, not the browser — alongside the Pilot policy's projected response.
+- Borrow inputs are clamped to `min(risk capacity, vault USDC liquidity)`, with both displayed, so the risk ceiling can never present a borrow the vault cannot fund.
 
 ### How it addresses the four judging criteria
 
