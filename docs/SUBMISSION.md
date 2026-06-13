@@ -12,7 +12,7 @@ Sigma is an on-chain portfolio risk engine — written in Stylus, verified again
 
 ## Short description (≈150 words, for card preview)
 
-Tokenized stocks cannot become useful DeFi collateral until somebody builds real risk pricing on-chain. Sigma does it. A parametric portfolio VaR engine runs in Stylus (Rust, WASM), is byte-equivalent to a Solidity baseline deployed at the same address space for verification, and is called by the Sigma Vault during every borrow and withdrawal check. A non-custodial Vault accepts the five live Robinhood Chain stock tokens (TSLA, AMD, AMZN, NFLX, PLTR), borrows real testnet USDC against the basket, and bounds leverage with a correlation-aware VaR plus an independent 80% base-LTV ceiling. A separate Strategist contract enforces user-signed policies before any AI-agent proposal touches the position; every successful action emits a rationale string on-chain. Built for the Robinhood Chain reserved slot and the Best Agentic Project track.
+Tokenized stocks cannot become useful DeFi collateral until somebody builds real risk pricing on-chain. Sigma does it. A parametric portfolio VaR engine runs in Stylus (Rust, WASM), produces VaR identical to a Solidity baseline deployed alongside it for verification, and is called by the Sigma Vault during every borrow and withdrawal check. A non-custodial Vault accepts the five live Robinhood Chain stock tokens (TSLA, AMD, AMZN, NFLX, PLTR), borrows real testnet USDC against the basket, and bounds leverage with a correlation-aware VaR plus an independent 80% base-LTV ceiling. A separate Strategist contract enforces user-signed policies before any AI-agent proposal touches the position; every successful action emits a rationale string on-chain. Built for the Robinhood Chain reserved slot and the Best Agentic Project track.
 
 ---
 
@@ -107,11 +107,36 @@ But equity collateral without portfolio-level risk pricing is just a worse versi
 
 ### Tech stack
 
-Stylus · Rust · WASM · Solidity 0.8.27 · Foundry · OpenZeppelin Contracts · TypeScript · AI SDK · Google Gemini 2.5 Flash · Anthropic Claude (alt) · viem · wagmi · Next.js 16 · Vercel · Pyth · RedStone · Blockscout · Slither.
+- **On-chain risk engine** — Rust · Arbitrum Stylus · WASM
+- **Smart contracts** — Solidity 0.8.27 · Foundry (forge/cast) · OpenZeppelin Contracts · Slither
+- **Chain** — Robinhood Chain testnet (chain id 46630) · real testnet USDC + five live equity tokens
+- **Oracle** — cross-checked Pyth + RedStone (off-chain agreement gate) → on-chain adapter with staleness, monotonic-timestamp, and sequential-deviation guards
+- **AI agent** — TypeScript · Vercel AI SDK · Google Gemini 2.5 Flash (provider-agnostic; Anthropic Claude alternate)
+- **Frontend** — Next.js 16 · React · viem · wagmi · Vercel
+- **Tooling / infra** — GitHub Actions (CI, scheduled guardian, scheduled oracle publisher) · Blockscout explorer
 
 ### What is honestly open
 
 This is a testnet system reviewed by the maintainers with third-party static analysis. Before any real-value deployment, Sigma needs an independent professional Solidity and Stylus audit, multisig + timelock on owner powers, real lender accounting (interest, reserves, bad debt), and a decentralized oracle path. We say so on the dashboard footer and in `docs/AUDIT-2026-06-06.md`.
+
+---
+
+## Progress during the buildathon
+
+Sigma was designed and built from scratch during the buildathon — there was no pre-existing codebase.
+
+- **Day-1 feasibility spike:** confirmed Stylus deploys and executes on Robinhood Chain testnet (chain 46630), verified the RPC, faucet (ETH + stock tokens), and Pyth/RedStone price availability — de-risking the whole architecture before writing product code.
+- **Core risk engine:** built the parametric portfolio VaR computation in Rust/Stylus (WAD fixed-point, signed correlations, Babylonian sqrt, packed correlation matrix), then wrote an equivalently-specced Solidity baseline and proved both produce identical VaR on the deployed reference vector — so the headline gas comparison (Stylus **122,318** vs Solidity **128,960** gas, a 5.15% saving at block 70,915,096) is reproducible, not asserted.
+- **Vault + Strategist:** shipped the non-custodial lending Vault (VaR-bounded borrows, 80% LTV backstop, liquidation with close-factor and bonus caps) and the agent-bound Strategist (per-user policy: agent address, borrow cap, concentration limit, min health, cooldown), backed by **40 Foundry tests including 512-run fuzz invariants** and **Slither with 0 findings**.
+- **Pilot agent + dashboard:** built the policy-bound LLM agent (tool-using, provider-agnostic) and a live Next.js dashboard reading every number directly from the deployed contracts.
+- **Hardening sprint (final days):** ran a full internal security review plus an external audit, remediated every finding, and migrated to a fresh Vault + Strategist on testnet. Added oracle-updater resilience (retries + per-symbol fault isolation), a borrow-liquidity clamp, an on-chain stress lab (scenario VaR computed by the live Stylus core), a first-fold proof strip, and an owner-powers disclosure.
+- **Live & verifiable:** deployed app at https://sigma-two-iota.vercel.app, all contracts verified on Robinhood Chain testnet, CI green, with deployment and audit records committed to the repo.
+
+---
+
+## Fundraising status
+
+**Not raising — self-funded testnet prototype.** Sigma is a pre-product, testnet-only build with no external funding, no token, and no raise to date; all development was bootstrapped during the buildathon. The contracts are deliberately framed as a "risk engine + proof Vault," not a production lending market, and the path to mainnet (independent professional audit, multisig + timelock on owner powers, real lender accounting, decentralized oracle) is documented openly. Near-term, we'd pursue ecosystem/RWA grants (e.g. the Arbitrum Foundation / Robinhood Chain path) to fund a professional audit and a production lending integration before any capital raise.
 
 ---
 
@@ -123,6 +148,9 @@ This is a testnet system reviewed by the maintainers with third-party static ana
 | Tagline | On-chain portfolio risk engine for tokenized equity collateral. |
 | Description (short) | Use the ≈150-word block above. |
 | Description (long) | Use the full submission body above. |
+| Progress during buildathon | Use the "Progress during the buildathon" section above. |
+| Tech stack | Use the "Tech stack" list above. |
+| Fundraising status | Use the "Fundraising status" section above. |
 | Tracks | Robinhood Chain reserved slot · Best Agentic Project |
 | Repo | https://github.com/dmetagame/sigma |
 | Live demo | https://sigma-two-iota.vercel.app |
