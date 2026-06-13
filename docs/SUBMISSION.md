@@ -99,7 +99,7 @@ But equity collateral without portfolio-level risk pricing is just a worse versi
 
 - **Live app**: https://sigma-two-iota.vercel.app
 - **Repository**: https://github.com/dmetagame/sigma
-- **Demo video**: _(to be added)_
+- **Demo video**: https://www.loom.com/share/8cd0c1397b7c4bf18b1d7cc9da9594cb
 - **Hardened deployment record**: [docs/DEPLOYMENT-2026-06-11.md](https://github.com/dmetagame/sigma/blob/main/docs/DEPLOYMENT-2026-06-11.md)
 - **Security review**: [docs/SECURITY-REVIEW-2026-06-07.md](https://github.com/dmetagame/sigma/blob/main/docs/SECURITY-REVIEW-2026-06-07.md) and [docs/AUDIT-2026-06-10.md](https://github.com/dmetagame/sigma/blob/main/docs/AUDIT-2026-06-10.md)
 - **Independent audit scope**: [docs/INDEPENDENT-AUDIT-SCOPE.md](https://github.com/dmetagame/sigma/blob/main/docs/INDEPENDENT-AUDIT-SCOPE.md)
@@ -126,7 +126,7 @@ This is a testnet system reviewed by the maintainers with third-party static ana
 | Tracks | Robinhood Chain reserved slot · Best Agentic Project |
 | Repo | https://github.com/dmetagame/sigma |
 | Live demo | https://sigma-two-iota.vercel.app |
-| Video | _(add YouTube unlisted URL after recording)_ |
+| Video | https://www.loom.com/share/8cd0c1397b7c4bf18b1d7cc9da9594cb |
 | Deployment chain | Robinhood Chain testnet (chain id 46630) |
 | Primary contract | `0x3517b74800E6A731656D8cc809d77f730da4d1dA` (Sigma Core, Stylus) |
 | Team | dmetagame |

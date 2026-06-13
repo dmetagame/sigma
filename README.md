@@ -3,6 +3,7 @@
 On-chain risk engine in Stylus for tokenized equity collateral on Robinhood Chain.
 
 Live app: https://sigma-two-iota.vercel.app
+Demo video: https://www.loom.com/share/8cd0c1397b7c4bf18b1d7cc9da9594cb
 
 **Hackathon entry — Arbitrum Open House London Online Buildathon (Jun 14, 2026).**
 
